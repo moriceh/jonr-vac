@@ -49,7 +49,7 @@ a model without a setting never shows an empty dropdown.
 | Group | Sensors |
 |---|---|
 | Status | `status` (activity enum), `battery` |
-| Errors & station | `robot_error`, `station_error` (both with `code` + `solution` attributes — the solution follows your UI language like the [notification bubbles](NOTIFICATIONS.md) — plus an `image` attribute holding the official fault picture file name, for automations that push it to a phone; see [Events](EVENTS.md)), `robot_message`, `station_status` |
+| Errors & station | `robot_error`, `station_error` (both with `label` + `solution` + `image` attributes — the plugin's human fault text and fix-it line in your UI language, plus the official fault picture file name, for automations that push errors to a phone; see [Notifications](NOTIFICATIONS.md) and [Events](EVENTS.md)), `robot_message`, `station_status` |
 | Tanks & hardware | `clean_water_tank`, `drain_water_tank`, `dust_bag_state`, `mop_tank_state` |
 | Consumable life (%) | `main_brush_life`, `side_brush_life`, `filter_life`, `mop_life`, `dust_bag_life`, `detergent_life`, `mop_trough_life`, `unit_sensor_life` |
 | Stats | `session_clean_time`, `session_clean_area`, `total_clean_time`, `total_clean_area`, `total_clean_count` |
