@@ -102,7 +102,8 @@ _SINGLE_MAP_ID = 0
 # Vector keys that only make sense for the CURRENTLY active map; stripped from
 # any other cached map shown in `.maps` so its stale position doesn't render on
 # the wrong floor plan (map-reliability Phase 2: live-overlay scoping).
-_LIVE_ONLY_VECTOR_KEYS = ("path", "vacuum", "goto", "vacuum_room", "vacuum_room_name")
+_LIVE_ONLY_VECTOR_KEYS = ("path", "path_segments", "vacuum", "goto",
+                          "vacuum_room", "vacuum_room_name")
 
 _LOGGER = logging.getLogger(__name__)
 

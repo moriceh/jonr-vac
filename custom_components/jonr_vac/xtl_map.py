@@ -744,6 +744,202 @@ def _calibration_points(data: dict, img_w: int, img_h: int) -> list[dict]:
     return pts
 
 
+# --- embedded-card vector contract (www/xiaomi-vac-card.js) ------------------
+# The bundled card's map page draws from the vector the /maps endpoint serves:
+# a labelled grid (`grid_rle`), traced room contours (`room_chains`), a room
+# list with metre centres, and metre overlays (charger/vacuum/path/walls/
+# carpets). Upstream this contract was only ever produced by map_vector.py for
+# the ijai/xiaomi-JSON brands; xtl never fed it, which is why the card showed
+# no map page at all (`_maps().filter(m => m.rooms)`). The bridge below builds
+# it from the parts _render_map already renders — the camera `attributes` stay
+# untouched (XVMC and our dashboards read those).
+
+# The card paints raster cells with room labels hard-coded to this band and
+# tints them by index into `rooms`; outside it, a shipped grid paints a fully
+# transparent layer OVER the traced fills (the upstream extract_json_grid
+# guard, which is also how _roomRaster decides: it bails out when `size` is
+# absent, leaving the traced chains as solid fills). JONR room_ids are the
+# plugin's room_id = id + 2 (usually 3-6), so xtl takes the chains-only path
+# — no `size`, no grid values — and only ships the grid when every label
+# really lands in band.
+_CARD_ROOM_BAND = (10, 59)
+
+
+def _m(x) -> float:
+    return round(x, 3)
+
+
+# Metre laws: the crop anchors scene x on the grid columns and scene y on the
+# rows (_screen_to_pixel: col = sx - y_max, row_top = (h-1) - ((800 - sy) -
+# x_min)), and _pixel_to_scene bakes cell-corner coords on .5 scene offsets
+# (pixel (0,0) -> scene (y_max-0.5, 800-x_min-(h-1)-0.5), the pair the
+# calibration test pins). The card's cell(c) = [minX + c[0]*res,
+# minY + c[1]*res] law then agrees with the PNG exactly — chains (entered as
+# [c, h - r] over _boundary_loop's top-down corner grid) and overlays (their
+# raw scene pose through the two laws below) land on the same pixel — at the
+# half-cell crop anchors bounds carries. The centroid test replays both
+# against the PNG gridlines; never re-derive it.
+def _scene_x_to_metres(sx: float, res: float) -> float:
+    return sx * res
+
+
+def _scene_y_to_metres(sy: float, res: float) -> float:
+    # scene y grows south (the PNG top row reads the smallest sy), so the
+    # north-up metre axis mirrors it — no rotation, no transpose.
+    return (_CANVAS - sy) * res
+
+
+def _card_grid_rle(raster: bytes, room_ids: set) -> list:
+    """[value,run] pairs the card expands row-major, row 0 at the bottom
+    (south). Our raster byte row 0 is already the drawn bottom (the vertical
+    flip happens at PNG compose time), so the bytes go verbatim; only room_id
+    cells keep a value, everything else paints 0 = transparent. EVERY run is
+    emitted (zero runs included): the card advances its cursor by the emitted
+    run length, so a dropped middle run would shift every later cell."""
+    present = set(raster) & room_ids
+    if not present:
+        return []
+    if not all(_CARD_ROOM_BAND[0] <= v <= _CARD_ROOM_BAND[1] for v in present):
+        return []  # upstream chains-only guard (see _CARD_ROOM_BAND)
+    out: list = []
+    prev, run = None, 0
+    for v in raster:
+        v = v if v in room_ids else 0
+        if v == prev:
+            run += 1
+            continue
+        if prev is not None:
+            out += [prev, run]
+        prev, run = v, 1
+    if prev is not None:
+        out += [prev, run]
+    return out
+
+
+def _card_room_chains(raster: bytes, w: int, h: int, room_ids) -> list:
+    """Exact room contours as card grid-cell corner rings. _boundary_loop
+    nodes are cell corners on the same cell-corner grid the card's
+    cell(c) = [minX + c[0]*res, minY + c[1]*res] maps to metres; the loop is
+    walked top-down (r increases south, the PNG top row) while the card's
+    row index increases north, so the corner (c, r) enters as (c, h - r) —
+    the same flip the PNG compose applies, and the centroid test pins it
+    against those pixels."""
+    chains = []
+    for rid in sorted(set(room_ids)):
+        cells = {(c, r) for r in range(h) for c in range(w)
+                 if raster[(h - 1 - r) * w + c] == rid}
+        if not cells:
+            continue
+        loop = _boundary_loop(cells)
+        if len(loop) < 4:
+            continue
+        # Loop nodes are top-down PNG cell-corner lines (r increases south);
+        # the card's cell(c) counts rows from the SOUTH, so the line enters as
+        # h - r. Derivation (pinned by the centroid test against the PNG
+        # pixels, never re-derive): _pixel_to_scene sends corner (c, r) to
+        # scene (y_max + c - 0.5, _CANVAS - x_min - (h - 1) + r - 0.5), the
+        # card maps [c, h - r] to (minX + c*res, minY + (h - r)*res) — both
+        # laws agree exactly for the bounds below.
+        ring = _simplify_orthogonal([(c, h - r) for c, r in loop])
+        if ring:
+            # `rings` is a LIST OF RINGS (each ring a point list) — the card
+            # iterates chain.rings then maps every point through cell(c).
+            chains.append({"id": rid, "rings": [[list(pt) for pt in ring]]})
+    return chains
+
+
+def _card_vector(data: dict, attributes: dict, pos: dict | None,
+                 charge: dict | None, relocating: bool) -> dict:
+    """The /maps vector for the bundled card (see the contract block above).
+    Pure function of the decoded blob + the resolved robot pose, so the
+    content_hash stays exactly sha256(raw) for ordinary renders."""
+    w, h = data["width"], data["height"]
+    res = float(data.get("resolution_cm") or _DEFAULT_RESOLUTION_CM) / 100.0
+    room_ids = {a["room_id"] for a in data["areas"]}
+
+    rooms = []
+    for a in data["areas"]:
+        entry = attributes["rooms"].get(str(a["room_id"]))
+        if not entry or "outline" not in entry:
+            continue  # no traced geometry = nothing to tap; keep it off-list
+        x0, y0, x1, y1 = entry["x0"], entry["y0"], entry["x1"], entry["y1"]
+        rooms.append({
+            "id": a["room_id"],
+            "name": entry["name"],
+            # _room_attribute already un-transposed and bbox-fell-back on
+            # x/y — metres straight, same law as the XVMC divider 20.
+            "cx": _m(_scene_x_to_metres(entry["x"], res)),
+            "cy": _m(_scene_y_to_metres(entry["y"], res)),
+            # bbox fallback rectangle (card draws it only without chains);
+            # y0 (the outline's min sy) is the NORTH edge, so it enters as
+            # bbox[1] — min-x/min-y/max-x/max-y in the card's metre space.
+            "bbox": [_m(_scene_x_to_metres(x0, res)),
+                     _m(_scene_y_to_metres(y1, res)),
+                     _m(_scene_x_to_metres(x1, res)),
+                     _m(_scene_y_to_metres(y0, res))],
+        })
+
+    vec: dict = {
+        "map_id": data["map_id"],
+        "resolution": res,
+        # Half-cell crop anchors (the .5 corner offset _pixel_to_scene
+        # bakes): cell (c, h - r) metres must equal the PNG position of the
+        # scene coord _pixel_to_scene gives that corner — both axes match at
+        # exactly these bounds (derivation in the metre-laws comment).
+        "bounds": {"minX": _m((data["y_max"] - 0.5) * res),
+                   "minY": _m((data["x_min"] - 0.5) * res)},
+        "rooms": rooms,
+        "room_chains": _card_room_chains(data["raster"], w, h, room_ids),
+    }
+    grid = _card_grid_rle(data["raster"], room_ids)
+    if grid:
+        # `size`/`grid_rle` stay ABSENT off-band, never empty: the card's
+        # _roomRaster treats an empty array as a present grid (![] is false
+        # in JS), paints the all-zero grid as a transparent <image> and then
+        # blanks every traced chain (fill = raster ? transparent : tint).
+        # Upstream _empty_grid omits them for the same reason.
+        vec["size"] = {"x": w, "y": h}
+        vec["grid_rle"] = grid
+    if charge:
+        vec["charger"] = {"x": _m(_scene_x_to_metres(charge["x"], res)),
+                          "y": _m(_scene_y_to_metres(charge["y"], res))}
+    # Mirrors the PNG glyph law: `pos` is the pose _render_map resolved (docked
+    # poses already parked on chargePos+5), and a relocating robot shows the
+    # badge there instead of the dot (the card draws m.vacuum verbatim).
+    if pos and not relocating:
+        vec["vacuum"] = {"x": _m(_scene_x_to_metres(pos["x"], res)),
+                         "y": _m(_scene_y_to_metres(pos["y"], res))}
+    segments = [[[_m(_scene_x_to_metres(x, res)),
+                  _m(_scene_y_to_metres(y, res))]
+                 for x, y in pts]
+                for _mode, pts in data["trace"] if len(pts) > 1]
+    if segments:
+        vec["path_segments"] = segments
+    walls = []
+    for wl in data["walls"]:
+        if wl["type"] != 1 or len(wl["points"]) < 2:
+            continue
+        (x1, y1), (x2, y2) = wl["points"][0], wl["points"][1]
+        walls.append([_m(_scene_x_to_metres(x1, res)),
+                      _m(_scene_y_to_metres(y1, res)),
+                      _m(_scene_x_to_metres(x2, res)),
+                      _m(_scene_y_to_metres(y2, res))])
+    if walls:
+        vec["walls"] = walls
+    carpets = []
+    for zone in data["carpet"]:
+        pts = zone["points"]
+        if len(pts) < 4:
+            continue
+        flat = [v for (x, y) in pts[:4] for v in
+                (_m(_scene_x_to_metres(x, res)),
+                 _m(_scene_y_to_metres(y, res)))]
+        carpets.append(flat)
+    if carpets:
+        vec["carpets"] = carpets
+    return vec
+
+
 def _dash_polyline(draw: ImageDraw.ImageDraw, pts, fill, width,
                    dash=_DASH) -> None:
     """Dashed polyline (PIL has no native dash): stroke [4, 2] scene units,
@@ -1735,7 +1931,12 @@ def render_xtl_map(raw: bytes, scale: int | None = None, *,
         # content_hash while not resting, so a status flip alone repaints).
         "station_icon": station,
     }
-    vector = {"map_id": data["map_id"], "width": img.width, "height": img.height}
+    # Full card contract for the /maps endpoint (www/xiaomi-vac-card.js):
+    # rooms list + metre bounds + traced chains + overlays. Every input is
+    # blob-derived except the relocating/station flags, which the digest
+    # already folds below — so the hash law is untouched.
+    vector = _card_vector(data, attributes, pos, data["charge_pos"] or None,
+                          relocating)
     # MapCache.async_upsert no-ops when content_hash matches the previous
     # entry, so a pin that appeared over an *unchanged* blob would never get
     # served. Fold the relocating flag into the digest (only while set, so

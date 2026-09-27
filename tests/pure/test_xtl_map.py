@@ -776,6 +776,183 @@ def test_dash_helper_leaves_gaps():
     assert px[19, 2][3] > 0   # tail run up to the segment end
 
 
+# --- embedded-card vector contract (www/xiaomi-vac-card.js) -------------------
+
+def _vector(**kw) -> dict:
+    """Render a 22x22 floor fixture with room 3 (cols 12..17, rows 2..7 of the
+    drawn image) and return the /maps vector."""
+    cells = kw.pop("cells",
+                   [(c, r) for r in range(2, 8) for c in range(12, 18)])
+    areas = kw.pop("areas", [_area(1, "Chambre", room_id=3, cx=10, cy=790)])
+    raw = _build_file(_raster_with_room(cells), width=22, height=22,
+                      areas=areas, **kw)
+    return xtl_map.render_xtl_map(raw, scale=xtl_map.SCALE)["vector"]
+
+
+def test_card_vector_passes_the_maps_filter():
+    # The card only builds map pages for vectors with a truthy rooms LIST
+    # (`_maps().filter(m => m && m.rooms)`) — the birth bug of the card's map
+    # page was xtl feeding a {map_id,width,height} vector and getting zero
+    # pages. A blob with a real room must yield a non-empty list.
+    vec = _vector()
+    assert vec["rooms"] and vec["room_chains"] and vec["map_id"] == 7
+    assert "size" not in vec  # room 3 is off-band here (band test below)
+    room, = vec["rooms"]
+    assert room["id"] == 3 and room["name"] == "Chambre"
+    assert len(room["bbox"]) == 4 and all(
+        isinstance(v, float) for v in room["bbox"])
+    # An area with no raster cells has no geometry: the XVMC attrs keep the
+    # entry, the card list must not (a chain-less room_id would join
+    # roomIndexById and tint the raster off by one).
+    vec2 = _vector(cells=[(7, 3)], areas=[_area(1, "R", room_id=3)])
+    assert vec2["rooms"]  # the cell keeps room 3
+    assert [r["id"] for r in vec2["rooms"]] == [3]
+
+
+def test_card_vector_grid_off_band_stays_absent_not_empty():
+    # JONR room_ids (3-6) sit OUTSIDE the card's hard-coded 10-59 paint band:
+    # shipping an empty-but-present grid_rle would make _roomRaster build an
+    # all-transparent grid (empty arrays are truthy in JS), paint the
+    # <image> and blank every traced chain (fill turns transparent once a
+    # raster exists). Off-band labels therefore omit size AND grid_rle.
+    vec = _vector()
+    assert "grid_rle" not in vec and "size" not in vec
+    # In-band labels ship the full run-length encoding, room bytes verbatim
+    # (byte row 0 is the drawn bottom the card paints as row 0 = south).
+    cells = [(c, r) for r in range(2, 8) for c in range(12, 18)]
+    raster = _raster_with_room(cells, rid=12)
+    vec = xtl_map.render_xtl_map(
+        _build_file(raster, width=22, height=22,
+                    areas=[_area(1, "Salon", room_id=12)]),
+        scale=xtl_map.SCALE)["vector"]
+    assert vec["size"] == {"x": 22, "y": 22}
+    assert sum(vec["grid_rle"][1::2]) == 22 * 22  # every cell accounted for
+    grid = []
+    for v, n in zip(*[iter(vec["grid_rle"])] * 2):
+        grid += [v] * n
+    assert len(grid) == 22 * 22
+    # room cells at their raster positions (row 0 = bottom = top-down row 19),
+    # non-room bytes zeroed; chains still ride along.
+    assert grid[(22 - 1 - 2) * 22 + 12] == 12
+    assert grid[0] == 0
+    assert vec["room_chains"][0]["id"] == 12
+
+
+def test_card_chains_land_on_png_cell_corners_exactly():
+    # The whole vector space is only right if a ring vertex fed to the card's
+    # cell(c) law (metres -> its SVG) maps back through _screen_to_pixel to
+    # the very PNG gridline that drew it. Room spans cols 12..17, drawn rows
+    # 2..7 -> corner lines c=12/18, r=2/8 (top-down) entering as h - r.
+    vec = _vector()
+    chain = next(ch for ch in vec["room_chains"] if ch["id"] == 3)
+    ring, = chain["rings"]
+    assert sorted(map(tuple, ring)) == [(12, 14), (12, 20), (18, 14), (18, 20)]
+    res, data = vec["resolution"], _fixture()
+    b = vec["bounds"]
+    assert abs(b["minX"] - (0 - 0.5) * res) < 1e-9   # y_max = 0 in fixture
+    assert abs(b["minY"] - (0 - 0.5) * res) < 1e-9   # x_min = 0 in fixture
+    for cx, cy in ring:
+        mx, my = b["minX"] + cx * res, b["minY"] + cy * res
+        # card metre -> scene (the inverse of the metre laws)
+        sx, sy = mx / res, xtl_map._CANVAS - my / res
+        px, py = xtl_map._screen_to_pixel(sx, sy, data)
+        assert abs(px - cx * data["scale"]) < 1e-6, (cx, cy)
+        assert abs(py - (22 - cy) * data["scale"]) < 1e-6, (cx, cy)
+
+
+def test_card_vector_centroid_matches_the_room_pixels():
+    # Field-truth pin (the transposed-axis guard): the card-space centre of
+    # the traced ring must be the room's pixel centroid, scaled like the
+    # XVMC divider 20 — no mirror, no rotation, 0.05 m cells.
+    vec = _vector()
+    room, = vec["rooms"]
+    chain = next(ch for ch in vec["room_chains"] if ch["id"] == 3)
+    ring, = chain["rings"]
+    # Rectangle ring: its centre is exact (no area-weighting needed).
+    card_cx = (min(p[0] for p in ring) + max(p[0] for p in ring)) / 2.0
+    card_cy = (min(p[1] for p in ring) + max(p[1] for p in ring)) / 2.0
+    res, data = vec["resolution"], _fixture()
+    b = vec["bounds"]
+    sx = (b["minX"] + card_cx * res) / res
+    sy = xtl_map._CANVAS - (b["minY"] + card_cy * res) / res
+    px, py = xtl_map._screen_to_pixel(sx, sy, data)
+    # Drawn room: cols 12..17 (corner x 12..18) rows 2..7 (y 2..8) -> pixel
+    # centroid (15*k, 5*k) = (30, 10) at k=2.
+    assert abs(px - 30.0) < 0.2 and abs(py - 10.0) < 0.2
+    # And the room centre the card LABELS on tracks the same point:
+    # _room_attribute fell back to the bbox centre (cx=10,cy=790 is garbage
+    # in this synthetic frame), so (cx, cy) metres == ring centre.
+    assert abs(room["cx"] - (b["minX"] + card_cx * res)) < 1e-6
+    assert abs(room["cy"] - (b["minY"] + card_cy * res)) < 1e-6
+
+
+def test_card_vector_overlays_track_the_png_glyphs():
+    # Docked zero pose: the PNG parks the glyph on chargePos + 5 — the vector
+    # must carry the SAME resolved pose (the card has no isInBaseStation
+    # branch, it draws m.vacuum verbatim).
+    charge = {"x": _X, "y": _Y, "a": 0}
+    raw = _build_file(bytes([2] * 484), width=22, height=22,
+                      pos={"x": 0, "y": 0, "a": 0, "i": 0},
+                      charge_pos=charge)
+    out = xtl_map.render_xtl_map(raw, scale=xtl_map.SCALE,
+                                 live=_CHARGING)
+    res = out["vector"]["resolution"]
+    assert out["vector"]["charger"] == {
+        "x": round(_X * res, 3), "y": round((800 - _Y) * res, 3)}
+    assert out["vector"]["vacuum"] == {
+        "x": round(_X * res, 3), "y": round((800 - (_Y + 5)) * res, 3)}
+    # Relocation: the PNG swaps the robot for the centre badge — no dot.
+    reloc = xtl_map.render_xtl_map(raw, scale=xtl_map.SCALE,
+                                   live={**_live(), "status_code": 17,
+                                         "station_status": "Charging"})
+    assert "vacuum" not in reloc["vector"]
+    # A free pose rides verbatim.
+    free = xtl_map.render_xtl_map(
+        _build_file(bytes([2] * 484), width=22, height=22,
+                    pos={"x": _X, "y": _Y, "a": 90}),
+        scale=xtl_map.SCALE)
+    assert free["vector"]["vacuum"] == {
+        "x": round(_X * res, 3), "y": round((800 - _Y) * res, 3)}
+
+
+def test_card_vector_path_and_hash_stay_blob_pure():
+    # The digest law is untouched: no live-pose fold was needed, the vector
+    # is a pure function of the blob (pos/charge/trace all decode from it),
+    # so an unchanged upload still no-ops MapCache.async_upsert.
+    trace = _trace_field([(5, 795, 0, 0), (6, 794, 0, 0), (7, 793, 0, 1)])
+    raw = _build_file(bytes([2] * 484), width=22, height=22, trace=trace)
+    out = xtl_map.render_xtl_map(raw, scale=xtl_map.SCALE)
+    assert out["content_hash"] == hashlib.sha256(raw).hexdigest()
+    res = out["vector"]["resolution"]
+    segs = out["vector"]["path_segments"]
+    assert segs, "trace must reach the card"
+    x0, y0 = segs[0][0]
+    assert x0 == round(5 * res, 3) and y0 == round((800 - 795) * res, 3)
+
+
+def test_static_only_strips_the_new_live_keys():
+    # map_coordinator strips live keys from INACTIVE maps served in `.maps`;
+    # the card's xtl vector puts the robot dot in `vacuum` and the route in
+    # `path_segments` — both must be in that tuple or a stale robot ghosts
+    # onto the wrong floor plan. map_coordinator imports homeassistant, so
+    # the pure tier reads its source as text beside xtl_map's own module
+    # file and replays the same dict-comprehension the module runs.
+    from pathlib import Path
+
+    src = (Path(xtl_map.__file__).with_name("map_coordinator.py")
+           ).read_text(encoding="utf-8")
+    marker = "_LIVE_ONLY_VECTOR_KEYS = ("
+    start = src.index(marker) + len(marker)
+    body: dict = {}
+    exec(f"_K = ({src[start:src.index(')', start)]},)", body)  # our own tree
+    keys = body["_K"]
+    assert "vacuum" in keys and "path_segments" in keys
+    stripped = {k: v for k, v in {"vacuum": 1, "path_segments": 2,
+                                  "rooms": 3, "charger": 4, "map_id": 5}.items()
+                if k not in keys}
+    assert stripped == {"rooms": 3, "charger": 4, "map_id": 5}
+
+
 # --- live task state (cleaning-highlight parity) -----------------------------------------------
 
 def test_clean_view_maps_robot_status_like_the_plugin():
