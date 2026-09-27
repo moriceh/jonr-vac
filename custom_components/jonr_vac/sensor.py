@@ -22,6 +22,7 @@ from .coordinator import JonrVacuumCoordinator
 from .device import VacuumStatus
 from .spec.profiles.xtl import (
     XTL_ERROR_CODE_KEYS,
+    XTL_ERROR_IMAGES,
     XTL_MESSAGE_CODE_KEYS,
     XTL_STATION_STATUSES,
     xtl_error_solutions,
@@ -112,8 +113,8 @@ def _has_xtl_prop(attr: str) -> Callable[[ModelProfile], bool]:
 def _error_attrs(code_fn: Callable[[VacuumStatus], int | None],
                  keys: dict) -> Callable[[VacuumStatus, str], dict | None]:
     """attrs_lang_fn builder for the ENUM error sensors: code + the plugin's
-    fix-it text (EN/FR picked by language). None at 0 so the entity carries
-    no stale attributes while healthy."""
+    fix-it text (EN/FR picked by language) + the official fault picture file.
+    None at 0 so the entity carries no stale attributes while healthy."""
     def attrs(status: VacuumStatus, lang: str) -> dict | None:
         code = code_fn(status)
         if not code:
@@ -122,6 +123,13 @@ def _error_attrs(code_fn: Callable[[VacuumStatus], int | None],
         out = {"code": code}
         if sol:
             out["solution"] = sol
+        # File name only; automations build the absolute URL from it (the
+        # companion app needs one to render a push picture, and the sensor
+        # must not bake in an external_url it cannot see). Same table the
+        # persistent bubble uses in error_events.
+        img = XTL_ERROR_IMAGES.get(code)
+        if img:
+            out["image"] = img
         return out
     return attrs
 
