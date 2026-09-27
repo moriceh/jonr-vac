@@ -1,4 +1,4 @@
-"""Shared pytest config for the Xiaomi Vacuum tests."""
+"""Shared pytest config for the JONR Vacuum tests."""
 from __future__ import annotations
 
 import importlib.util

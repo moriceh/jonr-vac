@@ -1,4 +1,4 @@
-"""Pure tests for IjaiVacuumDevice status handling."""
+"""Pure tests for XtlVacuumDevice status handling (xtl profile)."""
 from __future__ import annotations
 
 import pytest
@@ -9,14 +9,14 @@ from .helpers import FakeMiotDevice, load_device_module
 @pytest.mark.parametrize(
     ("raw_status", "expected_raw", "expected_activity"),
     [
-        (5, 5, "cleaning"),
-        (2, 2, "paused"),
-        (999, 999, "idle"),
+        (5, 5, "cleaning"),   # Sweeping and Mopping
+        (6, 6, "paused"),     # Paused
+        (999, 999, "idle"),   # unknown code falls back to idle
     ],
 )
 def test_status_maps_raw_activity(monkeypatch, raw_status, expected_raw, expected_activity):
     device_mod = load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "ijai.vacuum.v17")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
     status_prop = device.core.status
     FakeMiotDevice.property_values = {(status_prop.siid, status_prop.piid): raw_status}
 
@@ -29,7 +29,7 @@ def test_status_maps_raw_activity(monkeypatch, raw_status, expected_raw, expecte
 def test_status_raises_when_required_prop_fails(monkeypatch):
     """A failing status read must raise DeviceCommunicationError, not return idle."""
     device_mod = load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "ijai.vacuum.v17")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
     status_prop = device.core.status
     FakeMiotDevice.property_values = {
         (status_prop.siid, status_prop.piid): RuntimeError("network timeout")
@@ -42,7 +42,7 @@ def test_status_raises_when_required_prop_fails(monkeypatch):
 def test_status_tolerates_optional_prop_none(monkeypatch):
     """Optional props returning None must not raise; required status must succeed."""
     device_mod = load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "ijai.vacuum.v17")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
     status_prop = device.core.status
     # Only supply the required status prop; everything else defaults to None via FakeMiotDevice.
     FakeMiotDevice.property_values = {(status_prop.siid, status_prop.piid): 5}
@@ -55,11 +55,13 @@ def test_status_tolerates_optional_prop_none(monkeypatch):
 
 
 def test_status_skips_absent_core_props(monkeypatch):
+    """Props the profile doesn't declare are never polled (None filter)."""
     device_mod = load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "dreame.vacuum.p2008")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
     status_prop = device.core.status
     FakeMiotDevice.property_values = {(status_prop.siid, status_prop.piid): 5}
 
+    # The xtl core exposes no sweep_type/alarm prop.
     assert device.core.sweep_type is None
     assert device.core.alarm is None
 
@@ -72,7 +74,7 @@ def test_status_skips_absent_core_props(monkeypatch):
 
 def test_lean_core_fields_stay_parked(monkeypatch):
     device_mod = load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "ijai.vacuum.v17")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
     status_prop = device.core.status
     FakeMiotDevice.property_values = {(status_prop.siid, status_prop.piid): 5}
 
@@ -93,13 +95,15 @@ def test_as_int_coercion(monkeypatch):
 @pytest.mark.parametrize(
     "model",
     [
-        "roidmi.vacuum.r1b",
+        "ijai.vacuum.v17",
+        "dreame.vacuum.p2008",
+        "viomi.vacuum.v12",
         "roborock.vacuum.a01",
-        "dreame.vacuum.r2235a",
     ],
 )
-def test_device_refuses_non_onboardable_models(monkeypatch, model: str):
+def test_device_refuses_pruned_brand_models(monkeypatch, model: str):
+    """Every non-xtl brand is out of this fork — building one must refuse."""
     device_mod = load_device_module(monkeypatch)
 
     with pytest.raises(ValueError):
-        device_mod.IjaiVacuumDevice("host", "token", model)
+        device_mod.XtlVacuumDevice("host", "token", model)

@@ -1,4 +1,4 @@
-"""Pure-tier tests for the Phase 10 card baseline."""
+"""Pure-tier tests for the card baseline (xtl-only registry)."""
 from __future__ import annotations
 
 import importlib
@@ -9,7 +9,6 @@ from types import ModuleType
 import pytest
 
 from spec.registry import MODEL_PROFILES, card_baseline_gaps, get_profile, is_supported
-from spec.types import Action, Prop
 
 
 def test_is_supported_matches_card_baseline_for_registry():
@@ -25,61 +24,36 @@ def test_is_supported_matches_card_baseline_for_registry():
 @pytest.mark.parametrize(
     ("model", "expected"),
     [
-        ("ijai.vacuum.v17", True),
-        ("dreame.vacuum.p2008", True),
-        ("viomi.vacuum.v12", True),
-        ("viomi.vacuum.v45", True),
-        ("dreame.vacuum.r2235a", False),
-        ("roidmi.vacuum.r1b", False),
+        ("xtl.vacuum.xm2216", True),
+        ("ijai.vacuum.v17", False),
+        ("dreame.vacuum.p2008", False),
+        ("viomi.vacuum.v12", False),
         ("roborock.vacuum.a01", False),
     ],
 )
 def test_support_gate_known_models(model, expected):
+    """Only the shipped xtl profile passes; every other brand is gone."""
     assert is_supported(model) is expected
 
 
-def test_dreame_core_lifts_card_controls():
-    profile = get_profile("dreame.vacuum.p2008")
-    core = profile.core
+def test_xtl_profile_meets_card_baseline():
+    profile = get_profile("xtl.vacuum.xm2216")
 
-    assert core.fan_speed == Prop(4, 4)
-    assert core.water_level == Prop(4, 5)
-    assert core.locate == Action(7, 1)
-    assert core.fan_speeds == {
-        "quiet": 0,
-        "standard": 1,
-        "medium_gear": 2,
-        "strong": 3,
-    }
-    assert core.water_levels == {
-        "low_water_level": 1,
-        "medium_water_level": 2,
-        "high_water_level": 3,
-    }
-
-
-def test_viomi_v45_uses_ijai_shaped_core_for_card_controls():
-    profile = get_profile("viomi.vacuum.v45")
-    core = profile.core
-
-    assert core.charge == Action(3, 1)
-    assert core.fan_speed == Prop(7, 5)
-    assert core.water_level == Prop(7, 6)
-    assert core.alarm == Prop(4, 1)
+    assert profile is not None
     assert card_baseline_gaps(profile) == ()
-
-
-def test_trimmed_dreame_layout_is_not_onboardable():
-    profile = get_profile("dreame.vacuum.r2235a")
-
-    assert set(card_baseline_gaps(profile)) >= {"fan_speed", "water_level", "locate"}
 
 
 class _FakeMiotDevice:
     instances: list["_FakeMiotDevice"] = []
 
     def __init__(self, host, token, mapping=None, timeout=5):
-        self.calls = []
+        # device.py holds two MiotDevice handles on the same robot (main +
+        # short-timeout soft-read instance); tests model one robot, so every
+        # instance writes into the first one's call log.
+        if _FakeMiotDevice.instances:
+            self.calls = _FakeMiotDevice.instances[0].calls
+        else:
+            self.calls = []
         self.mapping = mapping
         self.instances.append(self)
 
@@ -92,55 +66,35 @@ class _FakeMiotDevice:
 
 
 def _load_device_module(monkeypatch: pytest.MonkeyPatch):
-    pkg_root = Path(__file__).resolve().parents[2] / "custom_components" / "xiaomi_vac"
+    pkg_root = Path(__file__).resolve().parents[2] / "custom_components" / "jonr_vac"
 
     miio = ModuleType("miio")
     miio.MiotDevice = _FakeMiotDevice
     monkeypatch.setitem(sys.modules, "miio", miio)
 
-    pkg = ModuleType("xiaomi_vac")
+    pkg = ModuleType("jonr_vac")
     pkg.__path__ = [str(pkg_root)]
-    monkeypatch.setitem(sys.modules, "xiaomi_vac", pkg)
+    monkeypatch.setitem(sys.modules, "jonr_vac", pkg)
 
     for name in list(sys.modules):
-        if name == "xiaomi_vac.device" or name.startswith("xiaomi_vac.spec"):
+        if name == "jonr_vac.device" or name.startswith("jonr_vac.spec"):
             monkeypatch.delitem(sys.modules, name, raising=False)
 
     _FakeMiotDevice.instances.clear()
-    return importlib.import_module("xiaomi_vac.device")
+    return importlib.import_module("jonr_vac.device")
 
 
 def test_device_locate_uses_core_action(monkeypatch):
     device_mod = _load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "dreame.vacuum.p2008")
+    device = device_mod.XtlVacuumDevice("host", "token", "xtl.vacuum.xm2216")
 
     device.locate()
 
-    assert _FakeMiotDevice.instances[-1].calls == [("action", 7, 1, [])]
+    assert _FakeMiotDevice.instances[-1].calls == [("action", 17, 4, [])]
 
 
-def test_device_locate_falls_back_to_alarm_property(monkeypatch):
-    device_mod = _load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "ijai.vacuum.v17")
-
-    device.locate()
-
-    assert _FakeMiotDevice.instances[-1].calls == [("set", 4, 1, True)]
-
-
-def test_device_clean_segments_uses_viomi_set_room_clean(monkeypatch):
-    device_mod = _load_device_module(monkeypatch)
-    device = device_mod.IjaiVacuumDevice("host", "token", "viomi.vacuum.v12")
-
-    device.clean_segments([101, 102])
-
-    assert _FakeMiotDevice.instances[-1].calls == [
-        ("action", 4, 13, [0, 1, "101,102"])
-    ]
-
-
-def test_device_rejects_profiles_below_card_baseline(monkeypatch):
+def test_device_rejects_unsupported_models(monkeypatch):
     device_mod = _load_device_module(monkeypatch)
 
-    with pytest.raises(ValueError, match="card baseline"):
-        device_mod.IjaiVacuumDevice("host", "token", "dreame.vacuum.r2235a")
+    with pytest.raises(ValueError):
+        device_mod.XtlVacuumDevice("host", "token", "dreame.vacuum.r2235a")

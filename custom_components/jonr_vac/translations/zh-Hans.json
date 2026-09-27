@@ -1,0 +1,665 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "添加您的 JONR 吸尘器",
+        "description": "使用电子邮件登录以获取实时地图。",
+        "menu_options": {
+          "credentials": "电子邮件和密码（获取实时地图）",
+          "local": "设备IP和令牌（仅控制，无地图）"
+        }
+      },
+      "credentials": {
+        "title": "登录小米智能家居",
+        "description": "登录一次。之后您将保持登录状态。",
+        "data": {
+          "username": "电子邮件、电话号码或小米账户ID",
+          "password": "密码"
+        }
+      },
+      "local": {
+        "title": "本地连接",
+        "description": "IP地址和32字符令牌。控制和传感器，无地图。",
+        "data": {
+          "host": "IP地址",
+          "token": "令牌"
+        }
+      },
+      "captcha": {
+        "title": "快速检查",
+        "description": "小米想确认您是真人。请输入下面的字符：\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "图像中的字符"
+        }
+      },
+      "twofa": {
+        "title": "输入验证码",
+        "description": "小米刚刚给您发送了一个验证码。请在下方输入。",
+        "data": {
+          "code": "验证码"
+        }
+      },
+      "devices": {
+        "title": "选择您的吸尘器",
+        "description": "此账户中有多台吸尘器。请选择要添加的吸尘器。",
+        "data": {
+          "device": "吸尘器"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新登录小米",
+        "description": "您的会话已过期，无法自动续期。请重新登录以恢复实时地图。",
+        "data": {
+          "username": "电子邮件、电话号码或小米账户ID",
+          "password": "密码"
+        }
+      },
+      "miot_oauth": {
+        "title": "启用实时地图认证",
+        "description": "可选。这会准备实时 MQTT 地图通道。跳过以保持当前的地图轮询行为。",
+        "data": {
+          "enable_miot_oauth": "启用 OAuth 以进行实时地图更新"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "关联小米 OAuth",
+        "description": "打开小米 OAuth 链接。小米跳转回来后，Home Assistant 将自动继续。"
+      },
+      "miot_oauth_code": {
+        "title": "粘贴小米 OAuth 代码",
+        "description": "自动回调未完成。请打开此链接，批准访问，然后从重定向的地址栏粘贴代码（在 'CODE=' 之后、'&' 之前）：\n\n{authorize_url}",
+        "data": {
+          "code": "OAuth 代码"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "小米 OAuth 已关联",
+        "description": "实时地图认证已就绪。"
+      }
+    },
+    "error": {
+      "unsupported_model": "目前不支持此型号。",
+      "cannot_connect": "无法通过此IP和令牌连接到吸尘器。",
+      "oauth_failed": "小米 OAuth 失败。请重试链接或手动粘贴代码。",
+      "oauth_region_failed": "无法从该代码判断小米 OAuth 区域。"
+    },
+    "abort": {
+      "already_configured": "此吸尘器已经配置。",
+      "reauth_successful": "您已重新登录。实时地图已恢复。",
+      "login_failed": "小米拒绝了（{reason}）。请检查您的电子邮件和密码，然后重试。",
+      "no_devices": "此账户中没有支持的吸尘器。",
+      "unsupported_model": "目前不支持此型号（仅限 JONR xtl.vacuum.xm2216）。",
+      "login_verification_required": "小米已阻止此次登录并要求验证账户。请在 account.xiaomi.com（或小米智能家居应用）登录，完成所需的验证，然后重试。"
+    },
+    "progress": {
+      "miot_oauth_auth": "在新标签页打开 [小米 OAuth]({authorize_url})。批准后，小米应返回 Home Assistant，此步骤将自动继续。"
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "地图"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "状态",
+        "state": {
+          "cleaning": "清扫中",
+          "paused": "已暂停",
+          "idle": "闲置",
+          "returning": "返回充电站",
+          "docked": "已停靠",
+          "error": "错误",
+          "localizing": "定位中"
+        }
+      },
+      "battery": {
+        "name": "电池"
+      },
+      "main_brush_life": {
+        "name": "主刷寿命"
+      },
+      "side_brush_life": {
+        "name": "边刷寿命"
+      },
+      "filter_life": {
+        "name": "过滤器寿命"
+      },
+      "mop_life": {
+        "name": "拖布寿命"
+      },
+      "dust_bag_life": {
+        "name": "尘袋寿命"
+      },
+      "detergent_life": {
+        "name": "清洁剂寿命"
+      },
+      "mop_trough_life": {
+        "name": "拖布清洗槽寿命"
+      },
+      "unit_sensor_life": {
+        "name": "机器人传感器寿命"
+      },
+      "session_clean_time": {
+        "name": "清扫时长（本次）"
+      },
+      "session_clean_area": {
+        "name": "清扫面积（本次）"
+      },
+      "total_clean_time": {
+        "name": "累计清扫时长"
+      },
+      "total_clean_area": {
+        "name": "累计清扫面积"
+      },
+      "total_clean_count": {
+        "name": "累计清扫次数"
+      },
+      "clean_timers": {
+        "name": "清扫计划"
+      },
+      "clean_water_tank": {
+        "name": "清水箱",
+        "state": {
+          "normal": "常温",
+          "uninstalled": "未安装",
+          "unusable": "不可用",
+          "fluid_low": "水位低"
+        }
+      },
+      "drain_water_tank": {
+        "name": "污水箱",
+        "state": {
+          "normal": "常温",
+          "uninstalled": "未安装",
+          "unusable": "不可用"
+        }
+      },
+      "dust_bag_state": {
+        "name": "集尘袋",
+        "state": {
+          "normal": "已安装",
+          "uninstalled": "未安装"
+        }
+      },
+      "mop_tank_state": {
+        "name": "拖布清洗水箱",
+        "state": {
+          "normal": "已安装",
+          "uninstalled": "未安装"
+        }
+      },
+      "robot_error": {
+        "name": "机器人错误",
+        "state": {
+          "none": "无错误",
+          "dust_box_missing": "尘盒未安装",
+          "roller_brush_entangled": "滚刷被缠绕",
+          "side_brush_entangled": "边刷被缠绕",
+          "drive_wheel_blocked": "驱动轮被卡住",
+          "drop_sensor_dirty": "跌落传感器脏污",
+          "laser_obstructed": "激光传感器上盖被卡住",
+          "laser_radar_blocked": "激光雷达受阻",
+          "drive_wheel_slipping": "驱动轮打滑",
+          "laser_cover_jammed": "激光传感器上盖被卡住",
+          "robot_stuck": "机器人被困",
+          "collision_sensor_jammed": "碰撞传感器卡住",
+          "robot_suspended": "机器人悬空",
+          "robot_tilted": "机器人倾斜",
+          "restricted_zone_start": "在限制区启动",
+          "carpet_start": "在地毯上启动",
+          "mop_holder_entangled": "拖布圆盘被缠绕",
+          "mop_holder_missing": "拖布支架未安装",
+          "dust_bag_missing": "集尘袋未安装",
+          "water_low": "水不足 / 清水箱缺失",
+          "dirty_water_full": "污水满 / 水箱缺失",
+          "mop_slot_full": "拖布清洗槽已满",
+          "mop_slot_full_refill_kit": "拖布清洗槽已满（补水套件）",
+          "refill_failed": "自动补水失败",
+          "drain_failed": "自动排水失败",
+          "solution_low": "清洁液不足"
+        }
+      },
+      "station_error": {
+        "name": "基站错误",
+        "state": {
+          "none": "无错误",
+          "dust_box_missing": "尘盒未安装",
+          "roller_brush_entangled": "滚刷被缠绕",
+          "side_brush_entangled": "边刷被缠绕",
+          "drive_wheel_blocked": "驱动轮被卡住",
+          "drop_sensor_dirty": "跌落传感器脏污",
+          "laser_obstructed": "激光传感器上盖被卡住",
+          "laser_radar_blocked": "激光雷达受阻",
+          "drive_wheel_slipping": "驱动轮打滑",
+          "laser_cover_jammed": "激光传感器上盖被卡住",
+          "robot_stuck": "机器人被困",
+          "collision_sensor_jammed": "碰撞传感器卡住",
+          "robot_suspended": "机器人悬空",
+          "robot_tilted": "机器人倾斜",
+          "restricted_zone_start": "在限制区启动",
+          "carpet_start": "在地毯上启动",
+          "mop_holder_entangled": "拖布圆盘被缠绕",
+          "mop_holder_missing": "拖布支架未安装",
+          "dust_bag_missing": "集尘袋未安装",
+          "water_low": "水不足 / 清水箱缺失",
+          "dirty_water_full": "污水满 / 水箱缺失",
+          "mop_slot_full": "拖布清洗槽已满",
+          "mop_slot_full_refill_kit": "拖布清洗槽已满（补水套件）",
+          "refill_failed": "自动补水失败",
+          "drain_failed": "自动排水失败",
+          "solution_low": "清洁液不足"
+        }
+      },
+      "robot_message": {
+        "name": "机器人消息",
+        "state": {
+          "none": "无",
+          "charge_complete_resume": "充电完成，继续清扫",
+          "low_battery_return": "电量低，返回中",
+          "upgrade_failed": "升级失败",
+          "upgrade_success": "升级成功",
+          "upgrade_available": "有可用更新",
+          "battery_low_shutdown": "电量低，正在关机",
+          "shutdown_soon": "即将关机，请放回基站",
+          "cleaning_done_returning": "清扫完成，返回中",
+          "clean_dirty_water_tank": "清空污水箱",
+          "schedule_started": "清洁预约已启动",
+          "schedule_conflict": "计划已跳过（冲突）",
+          "schedule_skipped_dnd": "计划已跳过（勿扰）",
+          "schedule_low_battery": "计划已跳过（电量低）",
+          "area_not_found": "未找到区域，清扫已结束",
+          "lost_return_to_station": "已迷失 — 请将机器人放回基站",
+          "maintain_side_brush": "维护：边刷",
+          "maintain_roller_brush": "维护：滚刷",
+          "maintain_dust_box_filter": "维护：尘盒滤网",
+          "maintain_mop_pads": "维护：拖布",
+          "maintain_dust_bag": "维护：尘袋",
+          "maintain_mop_slot": "维护：拖布清洗槽",
+          "maintain_dirty_water_filter": "维护：污水滤网",
+          "maintain_unit_sensor": "维护：机器人传感器"
+        }
+      },
+      "station_status": {
+        "name": "基站活动",
+        "state": {
+          "none": "无",
+          "asleep": "休眠",
+          "relocating": "定位中",
+          "washing_mop": "正在清洗拖布",
+          "emptying": "正在集尘",
+          "hot_drying": "热风烘干",
+          "wind_drying": "风扇烘干",
+          "returning_to_wash": "回洗拖布中",
+          "return_to_wash_paused": "返回清洗已暂停",
+          "returning_to_empty": "返回集尘中",
+          "return_to_empty_paused": "返回集尘已暂停",
+          "returning": "返回基站",
+          "return_paused": "返回已暂停",
+          "charging": "充电中",
+          "charged": "充电完成"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "风速",
+        "state": {
+          "quiet": "安静",
+          "standard": "标准",
+          "medium_gear": "中档",
+          "strong": "强劲",
+          "medium": "中等",
+          "mode_quiet": "安静",
+          "mode_standard": "标准",
+          "mode_medium": "中等",
+          "mode_strong": "强劲",
+          "ultra_strong": "超强",
+          "off": "关闭",
+          "energy_saving": "节能",
+          "powerful": "强力",
+          "slient": "安静",
+          "turbo": "涡轮",
+          "0": "安静",
+          "1": "节能",
+          "2": "标准",
+          "3": "强力",
+          "close": "关闭",
+          "one": "一级",
+          "two": "二级",
+          "three": "三级",
+          "forth": "四级",
+          "silent": "安静",
+          "basic": "基础",
+          "full_speed": "全速",
+          "auto": "自动",
+          "max": "最大"
+        }
+      },
+      "water_level": {
+        "name": "水量等级",
+        "state": {
+          "low_water_level": "低水位",
+          "medium_water_level": "中水位",
+          "high_water_level": "高水位",
+          "low": "低",
+          "medium": "中",
+          "high": "高",
+          "middle": "中",
+          "height": "高度",
+          "mid": "中",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "档位1",
+          "gear_2": "档位2",
+          "gear_3": "档位3",
+          "close": "关闭",
+          "one": "一级",
+          "two": "二级",
+          "three": "三级",
+          "hig": "高",
+          "off": "关闭",
+          "level1": "等级1",
+          "level2": "等级2",
+          "level3": "等级3"
+        }
+      },
+      "mode": {
+        "name": "清扫模式",
+        "state": {
+          "silent": "安静",
+          "basic": "标准",
+          "strong": "强劲",
+          "full_speed": "全速（最强）",
+          "auto": "自动",
+          "sweep": "清扫",
+          "sweep_and_mop": "清扫并拖地",
+          "mop": "拖地",
+          "medium": "中档",
+          "sweepandmop": "清扫并拖地",
+          "sweep_then_mop": "先清扫后拖地",
+          "sweep_mop": "清扫并拖地",
+          "sweep_before_mopping": "拖地前先清扫",
+          "both": "扫拖一体",
+          "custom": "自定义"
+        }
+      },
+      "sweep_type": {
+        "name": "清扫类型",
+        "state": {
+          "global": "全局",
+          "mop": "拖地",
+          "edge": "沿边清扫",
+          "area": "区域",
+          "point": "点位",
+          "remote": "远程控制",
+          "explore": "地图绘制",
+          "room": "房间自定义",
+          "floor": "地板自定义",
+          "control": "远程控制",
+          "total": "全局清扫",
+          "wall": "沿边清扫",
+          "zone": "区域清扫",
+          "corner": "沿边清扫",
+          "man": "远程控制",
+          "roomprefer": "房间自定义",
+          "materialprefer": "地板自定义",
+          "maping": "地图绘制中",
+          "gocharging": "返回充电",
+          "remotecontrol": "远程控制",
+          "selectroom": "房间",
+          "customclean": "自定义清扫",
+          "costum": "自定义",
+          "custom_area": "自定义区域",
+          "appointment": "预约",
+          "linkage": "联动",
+          "fast": "快速",
+          "ai_hosting": "AI托管"
+        }
+      },
+      "active_map": {
+        "name": "当前地图"
+      },
+      "route": {
+        "name": "拖地路径",
+        "state": {
+          "fast": "快速",
+          "daily": "每天",
+          "fine": "精细"
+        }
+      },
+      "count": {
+        "name": "清扫遍数",
+        "state": {
+          "once": "一次",
+          "twice": "两次"
+        }
+      },
+      "carpet_prefer": {
+        "name": "地毯清洁策略",
+        "state": {
+          "adaptive": "自适应",
+          "evade": "避让",
+          "carpet_only": "仅通过",
+          "ignore": "无视"
+        }
+      },
+      "dust_collection": {
+        "name": "自动集尘",
+        "state": {
+          "none": "不自动集尘",
+          "every_clean": "每次",
+          "medium": "每 5 次清扫"
+        }
+      },
+      "drying_time": {
+        "name": "烘干时长",
+        "state": {
+          "120": "2 小时",
+          "180": "3 小时",
+          "240": "4 小时"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "回洗频率",
+        "state": {
+          "5": "5 分钟",
+          "10": "10 分钟",
+          "15": "15 分钟"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "洗拖布温度",
+        "state": {
+          "normal": "常温",
+          "low": "低温",
+          "high": "高温"
+        }
+      },
+      "voice_language": {
+        "name": "语音播报语言",
+        "state": {
+          "chinese": "普通话",
+          "english": "英语",
+          "russian": "俄语",
+          "german": "德语",
+          "italian": "意大利语",
+          "french": "法语",
+          "polish": "波兰语",
+          "spanish": "西班牙语",
+          "korean": "韩语",
+          "chinese_tw": "中文（台湾）",
+          "vietnamese": "越南语"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "重复清扫"
+      },
+      "alarm": {
+        "name": "查找吸尘器（声音警告）"
+      },
+      "child_lock": {
+        "name": "童锁"
+      },
+      "do_not_disturb": {
+        "name": "定时免打扰"
+      },
+      "dnd_no_dust": {
+        "name": "勿扰期间不自动集尘"
+      },
+      "dnd_no_dry": {
+        "name": "勿扰期间不自动烘干"
+      },
+      "break_point": {
+        "name": "继续清扫"
+      },
+      "carpet_boost": {
+        "name": "地毯增压"
+      },
+      "auto_drying": {
+        "name": "自动烘干"
+      },
+      "mop_augment": {
+        "name": "拖地到边"
+      },
+      "wash_mop": {
+        "name": "清洗拖布"
+      },
+      "dry_mop": {
+        "name": "烘干拖布"
+      },
+      "collect_dust": {
+        "name": "集尘"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "音量"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "勿扰 - 开始时间"
+      },
+      "dnd_end_time": {
+        "name": "勿扰 - 结束时间"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "重置边刷"
+      },
+      "reset_main_brush": {
+        "name": "重置主刷"
+      },
+      "reset_filter": {
+        "name": "重置滤网"
+      },
+      "reset_mop": {
+        "name": "重置拖布"
+      },
+      "reset_dust_bag": {
+        "name": "重置尘袋"
+      },
+      "reset_mop_trough": {
+        "name": "重置拖布清洗槽"
+      },
+      "reset_unit_sensor": {
+        "name": "重置机器人传感器"
+      },
+      "fast_building": {
+        "name": "快速建图"
+      },
+      "clean_building": {
+        "name": "重建地图"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "清扫房间",
+      "description": "根据地图上的房间ID开始清扫一个或多个房间。",
+      "fields": {
+        "segments": {
+          "name": "房间",
+          "description": "要清扫的房间ID列表（来自地图摄像头的\"rooms\"属性）。"
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "刷新地图",
+      "description": "短暂启动吸尘器，使其离开基站并上传一张新地图，然后将其送回基站。",
+      "fields": {
+        "confirm_movement": {
+          "name": "确认移动",
+          "description": "必须为 true。吸尘器将短暂离开基站并返回。"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "关联小米 OAuth",
+        "description": "打开小米 OAuth 链接。小米跳转回来后，Home Assistant 将自动继续。"
+      },
+      "miot_oauth_code": {
+        "title": "粘贴小米 OAuth 代码",
+        "description": "自动回调未完成。请打开此链接，批准访问，然后从重定向的地址栏粘贴代码（在 'CODE=' 之后、'&' 之前）：\n\n{authorize_url}",
+        "data": {
+          "code": "OAuth 代码"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "小米 OAuth 已关联",
+        "description": "实时地图认证已就绪。"
+      },
+      "init": {
+        "title": "JONR 吸尘器选项",
+        "data": {
+          "error_notifications": "当机器人或基站报错时通知"
+        },
+        "data_description": {
+          "error_notifications": "除始终发出的 jonr_vac_error / jonr_vac_station_error 总线事件外，还显示 Home Assistant 持久通知。"
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "小米 OAuth 失败。请重试链接或手动粘贴代码。",
+      "oauth_region_failed": "无法从该代码判断小米 OAuth 区域。"
+    },
+    "progress": {
+      "miot_oauth_auth": "在新标签页打开 [小米 OAuth]({authorize_url})。批准后，小米应返回 Home Assistant，此步骤将自动继续。"
+    },
+    "abort": {
+      "oauth_local_only": "此吸尘器以仅本地方式添加，因此没有可关联 OAuth 的小米云会话。"
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "启用实时地图",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "关联小米 OAuth",
+            "description": "您的吸尘器可正常工作，但地图刷新较慢。请关联小米 OAuth 以获得实时（MQTT）地图。打开此链接，批准访问，然后从重定向的地址栏粘贴代码（在 'CODE=' 之后、'&' 之前）：\n\n{authorize_url}",
+            "data": {
+              "code": "OAuth 代码"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "小米 OAuth 失败。请重新开始关联并粘贴新的代码。",
+          "oauth_region_failed": "无法从该代码判断小米 OAuth 区域。"
+        },
+        "abort": {
+          "entry_gone": "该吸尘器已不再设置。"
+        }
+      }
+    }
+  }
+}

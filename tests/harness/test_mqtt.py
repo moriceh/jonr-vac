@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from homeassistant.core import HomeAssistant
 
-from custom_components.xiaomi_vac.cloud.mqtt import (
+from custom_components.jonr_vac.cloud.mqtt import (
     MiotMqttClient,
     _parse_message,
 )
@@ -43,6 +43,44 @@ def test_parse_event_occured() -> None:
     assert msg.siid == 10
     assert msg.eiid == 6
     assert isinstance(msg.arguments, list)
+
+
+def test_parse_properties_changed_real_shape() -> None:
+    """The broker nests value under "params" (live capture 2026-09-25).
+
+    The first revision read the top level only, so every push parsed with
+    value=None and the optimistic folding never fired — this is the shape
+    that MUST work.
+    """
+    topic = "device/1152219162/up/properties_changed/17/36"
+    payload = (
+        b'{"method":"properties_changed","params":{"did":"1152219162",'
+        b'"siid":17,"piid":36,"value":2008}}'
+    )
+
+    msg = _parse_message(topic, payload)
+
+    assert msg is not None
+    assert msg.kind == "property"
+    assert (msg.siid, msg.piid) == (17, 36)
+    assert msg.value == 2008
+
+
+def test_parse_event_occured_real_shape() -> None:
+    """Real map-data-report payload: arguments under params as out-param dicts."""
+    topic = "device/1152219162/up/event_occured/17/1"
+    payload = (
+        b'{"method":"event_occured","params":{"did":"1152219162",'
+        b'"siid":17,"eiid":1,"arguments":[{"piid":38,'
+        b'"value":"1628932731/1152219162/0"}]}}'
+    )
+
+    msg = _parse_message(topic, payload)
+
+    assert msg is not None
+    assert msg.kind == "event"
+    assert (msg.siid, msg.eiid) == (17, 1)
+    assert msg.arguments == [{"piid": 38, "value": "1628932731/1152219162/0"}]
 
 
 def test_parse_other_topic_returns_other_kind() -> None:

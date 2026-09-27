@@ -1,1 +1,1 @@
-"""Tests for the Xiaomi Vacuum integration."""
+"""Tests for the JONR Vacuum integration."""

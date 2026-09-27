@@ -5,14 +5,14 @@ import hashlib
 import json
 from urllib.parse import parse_qs, urlparse
 
-from custom_components.xiaomi_vac.cloud.oauth import (
+from custom_components.jonr_vac.cloud.oauth import (
     OAUTH_APP_ID,
     build_authorize_url,
     exchange_code,
     refreshed_oauth_entry_updates,
     resolve_region_from_code,
 )
-from custom_components.xiaomi_vac.const import (
+from custom_components.jonr_vac.const import (
     CONF_OAUTH_ACCESS_TOKEN,
     CONF_OAUTH_DEVICE_ID,
     CONF_OAUTH_EXPIRES_TS,
@@ -96,7 +96,7 @@ def test_exchange_code_parses_tokens_and_early_expiry() -> None:
 
 def test_oauth_needs_refresh_when_expired() -> None:
     """oauth_needs_refresh returns True when the stored expiry is in the past."""
-    from custom_components.xiaomi_vac.cloud.oauth import oauth_needs_refresh
+    from custom_components.jonr_vac.cloud.oauth import oauth_needs_refresh
 
     data = {
         CONF_OAUTH_REFRESH_TOKEN: "tok",
@@ -108,7 +108,7 @@ def test_oauth_needs_refresh_when_expired() -> None:
 
 def test_oauth_needs_refresh_when_not_due() -> None:
     """oauth_needs_refresh returns False when the token is still fresh."""
-    from custom_components.xiaomi_vac.cloud.oauth import oauth_needs_refresh
+    from custom_components.jonr_vac.cloud.oauth import oauth_needs_refresh
 
     data = {
         CONF_OAUTH_REFRESH_TOKEN: "tok",
@@ -120,7 +120,7 @@ def test_oauth_needs_refresh_when_not_due() -> None:
 
 def test_oauth_needs_refresh_missing_token_returns_false() -> None:
     """oauth_needs_refresh returns False when no refresh token is stored."""
-    from custom_components.xiaomi_vac.cloud.oauth import oauth_needs_refresh
+    from custom_components.jonr_vac.cloud.oauth import oauth_needs_refresh
 
     assert oauth_needs_refresh({CONF_OAUTH_REGION: "sg", CONF_OAUTH_EXPIRES_TS: 0}) is False
 

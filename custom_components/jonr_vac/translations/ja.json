@@ -1,0 +1,665 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "JONR 掃除機を追加",
+        "description": "ライブマップを取得するにはメールでサインインしてください。",
+        "menu_options": {
+          "credentials": "メールとパスワード（ライブマップを取得）",
+          "local": "デバイスIPとトークン（コントロールのみ、マップなし）"
+        }
+      },
+      "credentials": {
+        "title": "Mi Homeにサインインします",
+        "description": "1回サインインしてください。その後、ログイン状態を保つことができます。",
+        "data": {
+          "username": "メール、電話番号、またはMiアカウントID",
+          "password": "パスワード"
+        }
+      },
+      "local": {
+        "title": "ローカル接続",
+        "description": "IPアドレスと32文字のトークンです。コントロールとセンサー、マップなし。",
+        "data": {
+          "host": "IPアドレス",
+          "token": "トークン"
+        }
+      },
+      "captcha": {
+        "title": "簡単な確認",
+        "description": "Xiaomiはあなたが本物かどうかを確認したいです。以下の文字を入力してください：\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "画像からの文字"
+        }
+      },
+      "twofa": {
+        "title": "コードを入力します",
+        "description": "Xiaomiがメールでコードを送信しました。下に入力してください。",
+        "data": {
+          "code": "確認コード"
+        }
+      },
+      "devices": {
+        "title": "お使いのロボット掃除機を選択します",
+        "description": "このアカウントに複数のロボット掃除機があります。追加するものを選択してください。",
+        "data": {
+          "device": "ロボット掃除機"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Xiaomiに再度サインインします",
+        "description": "セッションの有効期限が切れており、自動更新できませんでした。ライブマップを復元するために再度サインインしてください。",
+        "data": {
+          "username": "メール、電話番号、またはMiアカウントID",
+          "password": "パスワード"
+        }
+      },
+      "miot_oauth": {
+        "title": "リアルタイム地図認証を有効化",
+        "description": "省略可。リアルタイムMQTT地図の準備です。スキップすると現在のポーリング地図のままです。",
+        "data": {
+          "enable_miot_oauth": "リアルタイム地図更新用にOAuthを有効化"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "Xiaomi OAuthをリンク",
+        "description": "Xiaomi OAuthリンクを開いてください。Xiaomiからのリダイレクト後、Home Assistantが自動的に続行します。"
+      },
+      "miot_oauth_code": {
+        "title": "Xiaomi OAuthコードを貼り付け",
+        "description": "自動コールバックが完了しませんでした。このリンクを開いてアクセスを承認し、リダイレクト先のアドレスバーのコード（'CODE='の後、'&'の前）を貼り付けてください：\n\n{authorize_url}",
+        "data": {
+          "code": "OAuthコード"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuthがリンクされました",
+        "description": "リアルタイム地図の準備が完了しました。"
+      }
+    },
+    "error": {
+      "unsupported_model": "このモデルはまだサポートされていません。",
+      "cannot_connect": "そのIPとトークンでロボット掃除機に到達できません。",
+      "oauth_failed": "Xiaomi OAuthに失敗しました。リンクをやり直すか、コードを手動で貼り付けてください。",
+      "oauth_region_failed": "そのコードからXiaomi OAuthのリージョンを特定できませんでした。"
+    },
+    "abort": {
+      "already_configured": "このロボット掃除機はすでにセットアップされています。",
+      "reauth_successful": "再度ログインしました。ライブマップが復元されました。",
+      "login_failed": "Xiaomiが拒否しました（{reason}）。メールとパスワードを確認して、もう一度試してください。",
+      "no_devices": "このアカウントにはサポートされているロボット掃除機がありません。",
+      "unsupported_model": "このモデルはまだサポートされていません（JONR xtl.vacuum.xm2216 のみ）。",
+      "login_verification_required": "Xiaomiがこのサインインをブロックし、アカウントの確認を求めています。account.xiaomi.com（またはXiaomi Homeアプリ）でサインインし、指示される確認を完了してから再試行してください。"
+    },
+    "progress": {
+      "miot_oauth_auth": "新しいタブで [Xiaomi OAuth]({authorize_url}) を開いてください。承認後、XiaomiがHome Assistantに戻ると、このステップが自動的に続行されます。"
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "マップ"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "ステータス",
+        "state": {
+          "cleaning": "清掃中",
+          "paused": "一時停止",
+          "idle": "待機中",
+          "returning": "充電ドックに戻っています",
+          "docked": "充電中",
+          "error": "エラー",
+          "localizing": "位置特定中…"
+        }
+      },
+      "battery": {
+        "name": "バッテリー"
+      },
+      "main_brush_life": {
+        "name": "メインブラシの寿命"
+      },
+      "side_brush_life": {
+        "name": "サイドブラシの寿命"
+      },
+      "filter_life": {
+        "name": "フィルターの寿命"
+      },
+      "mop_life": {
+        "name": "モップの寿命"
+      },
+      "dust_bag_life": {
+        "name": "集塵パック寿命"
+      },
+      "detergent_life": {
+        "name": "洗剤寿命"
+      },
+      "mop_trough_life": {
+        "name": "モップ洗浄トレイ寿命"
+      },
+      "unit_sensor_life": {
+        "name": "ロボットセンサー寿命"
+      },
+      "session_clean_time": {
+        "name": "掃除時間（セッション）"
+      },
+      "session_clean_area": {
+        "name": "掃除面積（セッション）"
+      },
+      "total_clean_time": {
+        "name": "合計掃除時間"
+      },
+      "total_clean_area": {
+        "name": "合計掃除面積"
+      },
+      "total_clean_count": {
+        "name": "合計掃除回数"
+      },
+      "clean_timers": {
+        "name": "掃除スケジュール"
+      },
+      "clean_water_tank": {
+        "name": "きれいな水タンク",
+        "state": {
+          "normal": "正常",
+          "uninstalled": "未設置",
+          "unusable": "使用不可",
+          "fluid_low": "水残りわずか"
+        }
+      },
+      "drain_water_tank": {
+        "name": "汚水箱",
+        "state": {
+          "normal": "正常",
+          "uninstalled": "未設置",
+          "unusable": "使用不可"
+        }
+      },
+      "dust_bag_state": {
+        "name": "集塵パック",
+        "state": {
+          "normal": "設置済み",
+          "uninstalled": "未設置"
+        }
+      },
+      "mop_tank_state": {
+        "name": "モップ洗浄タンク",
+        "state": {
+          "normal": "設置済み",
+          "uninstalled": "未設置"
+        }
+      },
+      "robot_error": {
+        "name": "ロボットエラー",
+        "state": {
+          "none": "エラーなし",
+          "dust_box_missing": "ダストボックス未設置",
+          "roller_brush_entangled": "ローラーブラシ絡まり",
+          "side_brush_entangled": "サイドブラシ絡まり",
+          "drive_wheel_blocked": "ドライブホイール詰まり",
+          "drop_sensor_dirty": "段差センサー汚れ",
+          "laser_obstructed": "レーザーセンサー遮られ",
+          "laser_radar_blocked": "レーザーレーダー詰まり",
+          "drive_wheel_slipping": "ドライブホイール空転",
+          "laser_cover_jammed": "レーザーセンサーカバー詰まり",
+          "robot_stuck": "ロボット身動き不能",
+          "collision_sensor_jammed": "衝突センサー詰まり",
+          "robot_suspended": "ロボット持ち上げられ",
+          "robot_tilted": "ロボット傾き",
+          "restricted_zone_start": "立入禁止ゾーンで開始",
+          "carpet_start": "カーペット上で開始",
+          "mop_holder_entangled": "モップホルダー絡まり",
+          "mop_holder_missing": "モップホルダー未設置",
+          "dust_bag_missing": "集塵パック未設置",
+          "water_low": "水残りわずか／きれいな水タンク未設置",
+          "dirty_water_full": "汚水タンク満杯／未設置",
+          "mop_slot_full": "モップ洗浄スロット満杯",
+          "mop_slot_full_refill_kit": "モップスロット満杯（補充キット）",
+          "refill_failed": "自動給水失敗",
+          "drain_failed": "自動排水失敗",
+          "solution_low": "洗剤残りわずか"
+        }
+      },
+      "station_error": {
+        "name": "ステーションエラー",
+        "state": {
+          "none": "エラーなし",
+          "dust_box_missing": "ダストボックス未設置",
+          "roller_brush_entangled": "ローラーブラシ絡まり",
+          "side_brush_entangled": "サイドブラシ絡まり",
+          "drive_wheel_blocked": "ドライブホイール詰まり",
+          "drop_sensor_dirty": "段差センサー汚れ",
+          "laser_obstructed": "レーザーセンサー遮られ",
+          "laser_radar_blocked": "レーザーレーダー詰まり",
+          "drive_wheel_slipping": "ドライブホイール空転",
+          "laser_cover_jammed": "レーザーセンサーカバー詰まり",
+          "robot_stuck": "ロボット身動き不能",
+          "collision_sensor_jammed": "衝突センサー詰まり",
+          "robot_suspended": "ロボット持ち上げられ",
+          "robot_tilted": "ロボット傾き",
+          "restricted_zone_start": "立入禁止ゾーンで開始",
+          "carpet_start": "カーペット上で開始",
+          "mop_holder_entangled": "モップホルダー絡まり",
+          "mop_holder_missing": "モップホルダー未設置",
+          "dust_bag_missing": "集塵パック未設置",
+          "water_low": "水残りわずか／きれいな水タンク未設置",
+          "dirty_water_full": "汚水タンク満杯／未設置",
+          "mop_slot_full": "モップ洗浄スロット満杯",
+          "mop_slot_full_refill_kit": "モップスロット満杯（補充キット）",
+          "refill_failed": "自動給水失敗",
+          "drain_failed": "自動排水失敗",
+          "solution_low": "洗剤残りわずか"
+        }
+      },
+      "robot_message": {
+        "name": "ロボットメッセージ",
+        "state": {
+          "none": "なし",
+          "charge_complete_resume": "充電完了、再開します",
+          "low_battery_return": "バッテリー低下、帰還中",
+          "upgrade_failed": "アップデート失敗",
+          "upgrade_success": "アップデート成功",
+          "upgrade_available": "アップデート利用可能",
+          "battery_low_shutdown": "バッテリー低下、シャットダウン中",
+          "shutdown_soon": "まもなくシャットダウン、ドックへ戻してください",
+          "cleaning_done_returning": "掃除完了、帰還中",
+          "clean_dirty_water_tank": "汚水タンクを空にしてください",
+          "schedule_started": "予約掃除を開始しました",
+          "schedule_conflict": "予約をスキップ（競合）",
+          "schedule_skipped_dnd": "予約をスキップ（おやすみモード）",
+          "schedule_low_battery": "予約をスキップ（バッテリー低下）",
+          "area_not_found": "ゾーンが見つからず、掃除を終了",
+          "lost_return_to_station": "はく離 — ロボットをステーションへ戻してください",
+          "maintain_side_brush": "メンテナンス：サイドブラシ",
+          "maintain_roller_brush": "メンテナンス：ローラーブラシ",
+          "maintain_dust_box_filter": "メンテナンス：ダストボックスフィルター",
+          "maintain_mop_pads": "メンテナンス：モップパッド",
+          "maintain_dust_bag": "メンテナンス：集塵パック",
+          "maintain_mop_slot": "メンテナンス：モップ洗浄スロット",
+          "maintain_dirty_water_filter": "メンテナンス：汚水フィルター",
+          "maintain_unit_sensor": "メンテナンス：ロボットセンサー"
+        }
+      },
+      "station_status": {
+        "name": "ステーションの動作",
+        "state": {
+          "none": "なし",
+          "asleep": "スリープ中",
+          "relocating": "位置特定中",
+          "washing_mop": "モップパッド洗浄中",
+          "emptying": "集塵中",
+          "hot_drying": "温風乾燥中",
+          "wind_drying": "送風乾燥中",
+          "returning_to_wash": "洗浄へ帰還中",
+          "return_to_wash_paused": "洗浄帰還が一時停止",
+          "returning_to_empty": "集塵へ帰還中",
+          "return_to_empty_paused": "集塵帰還が一時停止",
+          "returning": "帰還中",
+          "return_paused": "帰還が一時停止",
+          "charging": "充電中",
+          "charged": "充電完了"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "ファン速度",
+        "state": {
+          "quiet": "静音",
+          "standard": "標準",
+          "medium_gear": "中速",
+          "strong": "強",
+          "medium": "中",
+          "mode_quiet": "静音",
+          "mode_standard": "標準",
+          "mode_medium": "中",
+          "mode_strong": "強",
+          "ultra_strong": "超強",
+          "off": "オフ",
+          "energy_saving": "省エネ",
+          "powerful": "パワフル",
+          "slient": "静音",
+          "turbo": "ターボ",
+          "0": "静音",
+          "1": "省エネ",
+          "2": "標準",
+          "3": "パワフル",
+          "close": "クローズ",
+          "one": "1つ",
+          "two": "2つ",
+          "three": "3つ",
+          "forth": "4つ",
+          "silent": "静音",
+          "basic": "基本",
+          "full_speed": "最高速",
+          "auto": "自動",
+          "max": "最大"
+        }
+      },
+      "water_level": {
+        "name": "水量レベル",
+        "state": {
+          "low_water_level": "低水量",
+          "medium_water_level": "中水量",
+          "high_water_level": "高水量",
+          "low": "低",
+          "medium": "中",
+          "high": "高",
+          "middle": "中央",
+          "height": "高さ",
+          "mid": "中央",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "ギア1",
+          "gear_2": "ギア2",
+          "gear_3": "ギア3",
+          "close": "クローズ",
+          "one": "1つ",
+          "two": "2つ",
+          "three": "3つ",
+          "hig": "高",
+          "off": "オフ",
+          "level1": "レベル1",
+          "level2": "レベル2",
+          "level3": "レベル3"
+        }
+      },
+      "mode": {
+        "name": "清掃モード",
+        "state": {
+          "silent": "静音",
+          "basic": "標準",
+          "strong": "強",
+          "full_speed": "最高速（最大）",
+          "auto": "自動",
+          "sweep": "掃く",
+          "sweep_and_mop": "掃いて拭く",
+          "mop": "拭く",
+          "medium": "中速",
+          "sweepandmop": "掃いて拭く",
+          "sweep_then_mop": "掃いてから拭く",
+          "sweep_mop": "掃いて拭く",
+          "sweep_before_mopping": "拭く前に掃く",
+          "both": "掃き拭き両用",
+          "custom": "カスタム"
+        }
+      },
+      "sweep_type": {
+        "name": "掃除タイプ",
+        "state": {
+          "global": "グローバル",
+          "mop": "拭く",
+          "edge": "エッジに沿う",
+          "area": "エリア",
+          "point": "ポイント",
+          "remote": "リモートコントロール",
+          "explore": "マッピング",
+          "room": "部屋のカスタマイズ",
+          "floor": "床のカスタマイズ",
+          "control": "リモートコントロール",
+          "total": "全体清掃",
+          "wall": "壁の清掃",
+          "zone": "ゾーン清掃",
+          "corner": "エッジに沿う",
+          "man": "リモートコントロール",
+          "roomprefer": "部屋のカスタマイズ",
+          "materialprefer": "床のカスタマイズ",
+          "maping": "マッピング中",
+          "gocharging": "充電に戻る",
+          "remotecontrol": "リモートコントロール",
+          "selectroom": "部屋",
+          "customclean": "カスタム清掃",
+          "costum": "カスタム",
+          "custom_area": "カスタムエリア",
+          "appointment": "スケジュール済み",
+          "linkage": "リンク",
+          "fast": "高速",
+          "ai_hosting": "AIホスティング"
+        }
+      },
+      "active_map": {
+        "name": "現在のマップ"
+      },
+      "route": {
+        "name": "モップ経路",
+        "state": {
+          "fast": "速い",
+          "daily": "標準",
+          "fine": "丁寧"
+        }
+      },
+      "count": {
+        "name": "掃除パス数",
+        "state": {
+          "once": "1回",
+          "twice": "2回"
+        }
+      },
+      "carpet_prefer": {
+        "name": "カーペット掃除方針",
+        "state": {
+          "adaptive": "自動適応",
+          "evade": "回避",
+          "carpet_only": "1回のみ通過",
+          "ignore": "無視"
+        }
+      },
+      "dust_collection": {
+        "name": "自動集塵",
+        "state": {
+          "none": "自動集塵なし",
+          "every_clean": "毎回",
+          "medium": "5回に1回"
+        }
+      },
+      "drying_time": {
+        "name": "モップ乾燥時間",
+        "state": {
+          "120": "2時間",
+          "180": "3時間",
+          "240": "4時間"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "洗浄間隔",
+        "state": {
+          "5": "5分",
+          "10": "10分",
+          "15": "15分"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "モップ洗浄温度",
+        "state": {
+          "normal": "正常",
+          "low": "低",
+          "high": "高"
+        }
+      },
+      "voice_language": {
+        "name": "音声アナウンス言語",
+        "state": {
+          "chinese": "中国語",
+          "english": "英語",
+          "russian": "ロシア語",
+          "german": "ドイツ語",
+          "italian": "イタリア語",
+          "french": "フランス語",
+          "polish": "ポーランド語",
+          "spanish": "スペイン語",
+          "korean": "韓国語",
+          "chinese_tw": "中国語（台湾）",
+          "vietnamese": "ベトナム語"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "清掃を繰り返す"
+      },
+      "alarm": {
+        "name": "ロボット掃除機を見つける（ビープ音）"
+      },
+      "child_lock": {
+        "name": "チャイルドロック"
+      },
+      "do_not_disturb": {
+        "name": "おやすみモード"
+      },
+      "dnd_no_dust": {
+        "name": "おやすみ中は自動集塵しない"
+      },
+      "dnd_no_dry": {
+        "name": "おやすみ中は自動乾燥しない"
+      },
+      "break_point": {
+        "name": "掃除を再開"
+      },
+      "carpet_boost": {
+        "name": "カーペットブースト"
+      },
+      "auto_drying": {
+        "name": "自動乾燥"
+      },
+      "mop_augment": {
+        "name": "際までモップ掛け"
+      },
+      "wash_mop": {
+        "name": "モップパッドを洗浄"
+      },
+      "dry_mop": {
+        "name": "モップパッドを乾燥"
+      },
+      "collect_dust": {
+        "name": "ゴミを捨てる"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "音量"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "おやすみ - 開始時刻"
+      },
+      "dnd_end_time": {
+        "name": "おやすみ - 終了時刻"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "サイドブラシをリセット"
+      },
+      "reset_main_brush": {
+        "name": "メインブラシをリセット"
+      },
+      "reset_filter": {
+        "name": "フィルターをリセット"
+      },
+      "reset_mop": {
+        "name": "モップをリセット"
+      },
+      "reset_dust_bag": {
+        "name": "集塵パックをリセット"
+      },
+      "reset_mop_trough": {
+        "name": "モップ洗浄トレイをリセット"
+      },
+      "reset_unit_sensor": {
+        "name": "ロボットセンサーをリセット"
+      },
+      "fast_building": {
+        "name": "クイックマッピング"
+      },
+      "clean_building": {
+        "name": "地図を再構築"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "部屋を清掃します",
+      "description": "マップ上の部屋IDで1つ以上の部屋の清掃を開始します。",
+      "fields": {
+        "segments": {
+          "name": "部屋",
+          "description": "清掃する部屋IDのリスト（マップカメラの\"rooms\"属性から）。"
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "地図を更新",
+      "description": "掃除機を一時的に始動してドックから出て新しい地図をアップロードさせ、その後ドックへ戻します。",
+      "fields": {
+        "confirm_movement": {
+          "name": "移動を確認",
+          "description": "trueである必要があります。掃除機は一時的にドックを出て戻ります。"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "Xiaomi OAuthをリンク",
+        "description": "Xiaomi OAuthリンクを開いてください。Xiaomiからのリダイレクト後、Home Assistantが自動的に続行します。"
+      },
+      "miot_oauth_code": {
+        "title": "Xiaomi OAuthコードを貼り付け",
+        "description": "自動コールバックが完了しませんでした。このリンクを開いてアクセスを承認し、リダイレクト先のアドレスバーのコード（'CODE='の後、'&'の前）を貼り付けてください：\n\n{authorize_url}",
+        "data": {
+          "code": "OAuthコード"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuthがリンクされました",
+        "description": "リアルタイム地図の準備が完了しました。"
+      },
+      "init": {
+        "title": "JONR Vacuum オプション",
+        "data": {
+          "error_notifications": "ロボットまたはドックがエラーを報告したときに通知"
+        },
+        "data_description": {
+          "error_notifications": "常時発行される jonr_vac_error / jonr_vac_station_error イベントに加えて、Home Assistantの永続通知を表示します。"
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "Xiaomi OAuthに失敗しました。リンクをやり直すか、コードを手動で貼り付けてください。",
+      "oauth_region_failed": "そのコードからXiaomi OAuthのリージョンを特定できませんでした。"
+    },
+    "progress": {
+      "miot_oauth_auth": "新しいタブで [Xiaomi OAuth]({authorize_url}) を開いてください。承認後、XiaomiがHome Assistantに戻ると、このステップが自動的に続行されます。"
+    },
+    "abort": {
+      "oauth_local_only": "この掃除機はローカル専用で追加されたため、OAuthをリンクするXiaomiクラウドセッションがありません。"
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "リアルタイムライブ地図を有効化",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "Xiaomi OAuthをリンク",
+            "description": "掃除機は動作していますが、地図の更新は遅めです。Xiaomi OAuthをリンクするとリアルタイム（MQTT）ライブ地図が利用できます。このリンクを開いてアクセスを承認し、リダイレクト先のアドレスバーのコード（'CODE='の後、'&'の前）を貼り付けてください：\n\n{authorize_url}",
+            "data": {
+              "code": "OAuthコード"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "Xiaomi OAuthに失敗しました。リンクをやり直して新しいコードを貼り付けてください。",
+          "oauth_region_failed": "そのコードからXiaomi OAuthのリージョンを特定できませんでした。"
+        },
+        "abort": {
+          "entry_gone": "その掃除機はセットアップされていません。"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,665 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dodaj odkurzacz JONR",
+        "description": "Zaloguj się za pomocą poczty e-mail, aby uzyskać mapę na żywo.",
+        "menu_options": {
+          "credentials": "E-mail i hasło (uzyskaj mapę na żywo)",
+          "local": "IP urządzenia i token (tylko kontrola, bez mapy)"
+        }
+      },
+      "credentials": {
+        "title": "Zaloguj się do Mi Home",
+        "description": "Zaloguj się raz. Pozostaniesz zalogowany po tym.",
+        "data": {
+          "username": "E-mail, numer telefonu lub ID konta Mi",
+          "password": "Hasło"
+        }
+      },
+      "local": {
+        "title": "Połączenie lokalne",
+        "description": "Adres IP i 32-znakowy token. Kontrola i czujniki, brak mapy.",
+        "data": {
+          "host": "Adres IP",
+          "token": "Token"
+        }
+      },
+      "captcha": {
+        "title": "Szybka weryfikacja",
+        "description": "Xiaomi chce się upewnić, że jesteś prawdziwą osobą. Wpisz poniższe znaki:\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "Znaki z obrazu"
+        }
+      },
+      "twofa": {
+        "title": "Wpisz kod",
+        "description": "Xiaomi właśnie wysłała Ci kod na e-mail. Wpisz go poniżej.",
+        "data": {
+          "code": "Kod weryfikacyjny"
+        }
+      },
+      "devices": {
+        "title": "Wybierz odkurzacz",
+        "description": "Na tym koncie jest więcej niż jeden odkurzacz. Wybierz ten, który chcesz dodać.",
+        "data": {
+          "device": "Odkurzacz"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Zaloguj się ponownie do Xiaomi",
+        "description": "Twoja sesja wygasła i nie mogła się odnowić automatycznie. Zaloguj się ponownie, aby przywrócić mapę na żywo.",
+        "data": {
+          "username": "E-mail, numer telefonu lub ID konta Mi",
+          "password": "Hasło"
+        }
+      },
+      "miot_oauth": {
+        "title": "Włącz uwierzytelnianie mapy w czasie rzeczywistym",
+        "description": "Opcjonalne. Przygotowuje ścieżkę mapy MQTT w czasie rzeczywistym. Pomiń, aby zachować obecne odpytywanie mapy.",
+        "data": {
+          "enable_miot_oauth": "Włącz OAuth dla aktualizacji mapy w czasie rzeczywistym"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "Połącz Xiaomi OAuth",
+        "description": "Otwórz link OAuth Xiaomi. Home Assistant kontynuował będzie automatycznie po powrocie z Xiaomi."
+      },
+      "miot_oauth_code": {
+        "title": "Wklej kod OAuth Xiaomi",
+        "description": "Automatyczne wywołanie zwrotne nie zostało ukończone. Otwórz ten link, zaakceptuj dostęp i wklej kod z paska adresu przekierowania (po 'CODE=' i przed '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Kod OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth połączony",
+        "description": "Uwierzytelnianie mapy w czasie rzeczywistym jest gotowe."
+      }
+    },
+    "error": {
+      "unsupported_model": "Ten model nie jest jeszcze obsługiwany.",
+      "cannot_connect": "Nie można połączyć się z odkurzaczem przy tym adresie IP i tokenie.",
+      "oauth_failed": "Xiaomi OAuth nie powiodło się. Spróbuj ponownie lub wklej kod ręcznie.",
+      "oauth_region_failed": "Nie udało się ustalić regionu OAuth Xiaomi z tego kodu."
+    },
+    "abort": {
+      "already_configured": "Ten odkurzacz jest już skonfigurowany.",
+      "reauth_successful": "Jesteś ponownie zalogowany. Mapa na żywo została przywrócona.",
+      "login_failed": "Xiaomi odrzuciła to ({reason}). Sprawdź swój e-mail i hasło, a następnie spróbuj ponownie.",
+      "no_devices": "Na tym koncie nie ma obsługiwanych odkurzaczy.",
+      "unsupported_model": "Ten model nie jest jeszcze obsługiwany (tylko JONR xtl.vacuum.xm2216).",
+      "login_verification_required": "Xiaomi zablokowało to logowanie i wymaga weryfikacji konta. Zaloguj się na account.xiaomi.com (lub w aplikacji Xiaomi Home), wykonaj wymaganą weryfikację i spróbuj ponownie."
+    },
+    "progress": {
+      "miot_oauth_auth": "Otwórz [Xiaomi OAuth]({authorize_url}) w nowej karcie. Po zatwierdzeniu Xiaomi powinien wrócić do Home Assistant i ten krok zostanie kontynuowany automatycznie."
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "Mapa"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stan",
+        "state": {
+          "cleaning": "Czyszczenie",
+          "paused": "Wstrzymane",
+          "idle": "Nieaktywny",
+          "returning": "Powrót do stacji",
+          "docked": "Na stacji",
+          "error": "Błąd",
+          "localizing": "Lokalizowanie"
+        }
+      },
+      "battery": {
+        "name": "Bateria"
+      },
+      "main_brush_life": {
+        "name": "Żywotność głównej szczotki"
+      },
+      "side_brush_life": {
+        "name": "Żywotność bocznej szczotki"
+      },
+      "filter_life": {
+        "name": "Żywotność filtra"
+      },
+      "mop_life": {
+        "name": "Żywotność pędu mopującego"
+      },
+      "dust_bag_life": {
+        "name": "Żywotność worka na kurz"
+      },
+      "detergent_life": {
+        "name": "Żywotność detergentu"
+      },
+      "mop_trough_life": {
+        "name": "Żywotność miski myjącej mop"
+      },
+      "unit_sensor_life": {
+        "name": "Żywotność czujników robota"
+      },
+      "session_clean_time": {
+        "name": "Czas sprzątania (sesja)"
+      },
+      "session_clean_area": {
+        "name": "Powierzchnia sprzątania (sesja)"
+      },
+      "total_clean_time": {
+        "name": "Łączny czas sprzątania"
+      },
+      "total_clean_area": {
+        "name": "Łączna powierzchnia sprzątania"
+      },
+      "total_clean_count": {
+        "name": "Łączna liczba sprzątań"
+      },
+      "clean_timers": {
+        "name": "Harmonogramy sprzątania"
+      },
+      "clean_water_tank": {
+        "name": "Czysty zbiornik",
+        "state": {
+          "normal": "Normalny",
+          "uninstalled": "Odinstalowany",
+          "unusable": "Nienadający",
+          "fluid_low": "Niski poziom wody"
+        }
+      },
+      "drain_water_tank": {
+        "name": "Brudny zbiornik",
+        "state": {
+          "normal": "Normalny",
+          "uninstalled": "Odinstalowany",
+          "unusable": "Nienadający"
+        }
+      },
+      "dust_bag_state": {
+        "name": "Worek na kurz",
+        "state": {
+          "normal": "Zamontowany",
+          "uninstalled": "Odinstalowany"
+        }
+      },
+      "mop_tank_state": {
+        "name": "Zbiornik wody myjącej",
+        "state": {
+          "normal": "Zamontowany",
+          "uninstalled": "Odinstalowany"
+        }
+      },
+      "robot_error": {
+        "name": "Błąd robota",
+        "state": {
+          "none": "Brak błędu",
+          "dust_box_missing": "Pojemnik na kurz nie jest zainstalowany",
+          "roller_brush_entangled": "Zaplątana szczotka główna",
+          "side_brush_entangled": "Zaplątana szczotka boczna",
+          "drive_wheel_blocked": "Zablokowane koło napędowe",
+          "drop_sensor_dirty": "Zabrudzony czujnik spadku",
+          "laser_obstructed": "Zablokowana osłona czujnika laserowego",
+          "laser_radar_blocked": "Zablokowany radar lasera",
+          "drive_wheel_slipping": "Ślizgające się koło napędowe",
+          "laser_cover_jammed": "Zablokowana osłona czujnika laserowego",
+          "robot_stuck": "Robot utknął",
+          "collision_sensor_jammed": "Zacięty czujnik kolizji",
+          "robot_suspended": "Robot zawieszony",
+          "robot_tilted": "Robot przechylony",
+          "restricted_zone_start": "Start w strefie zastrzeżonej",
+          "carpet_start": "Start na dywanie",
+          "mop_holder_entangled": "Uchwyt nakładki na pady mopujące jest zaplątany",
+          "mop_holder_missing": "Uchwyt mopa nie zamontowany",
+          "dust_bag_missing": "Pojemnik na kurz nie jest zainstalowany",
+          "water_low": "Niski poziom wody / brak czystego zbiornika",
+          "dirty_water_full": "Pełna brudna woda / brak zbiornika",
+          "mop_slot_full": "Pełny slot mycia mopa",
+          "mop_slot_full_refill_kit": "Pełny slot mycia (zestaw uzupełniający)",
+          "refill_failed": "Automatyczne napełnianie nie powiodło się",
+          "drain_failed": "Automatyczne opróżnianie nie powiodło się",
+          "solution_low": "Niewystarczająca ilość roztworu czyszczącego"
+        }
+      },
+      "station_error": {
+        "name": "Błąd stacji",
+        "state": {
+          "none": "Brak błędu",
+          "dust_box_missing": "Pojemnik na kurz nie jest zainstalowany",
+          "roller_brush_entangled": "Zaplątana szczotka główna",
+          "side_brush_entangled": "Zaplątana szczotka boczna",
+          "drive_wheel_blocked": "Zablokowane koło napędowe",
+          "drop_sensor_dirty": "Zabrudzony czujnik spadku",
+          "laser_obstructed": "Zablokowana osłona czujnika laserowego",
+          "laser_radar_blocked": "Zablokowany radar lasera",
+          "drive_wheel_slipping": "Ślizgające się koło napędowe",
+          "laser_cover_jammed": "Zablokowana osłona czujnika laserowego",
+          "robot_stuck": "Robot utknął",
+          "collision_sensor_jammed": "Zacięty czujnik kolizji",
+          "robot_suspended": "Robot zawieszony",
+          "robot_tilted": "Robot przechylony",
+          "restricted_zone_start": "Start w strefie zastrzeżonej",
+          "carpet_start": "Start na dywanie",
+          "mop_holder_entangled": "Uchwyt nakładki na pady mopujące jest zaplątany",
+          "mop_holder_missing": "Uchwyt mopa nie zamontowany",
+          "dust_bag_missing": "Pojemnik na kurz nie jest zainstalowany",
+          "water_low": "Niski poziom wody / brak czystego zbiornika",
+          "dirty_water_full": "Pełna brudna woda / brak zbiornika",
+          "mop_slot_full": "Pełny slot mycia mopa",
+          "mop_slot_full_refill_kit": "Pełny slot mycia (zestaw uzupełniający)",
+          "refill_failed": "Automatyczne napełnianie nie powiodło się",
+          "drain_failed": "Automatyczne opróżnianie nie powiodło się",
+          "solution_low": "Niewystarczająca ilość roztworu czyszczącego"
+        }
+      },
+      "robot_message": {
+        "name": "Komunikat robota",
+        "state": {
+          "none": "Brak",
+          "charge_complete_resume": "Ładowanie zakończone, wznawiam",
+          "low_battery_return": "Niski poziom baterii, powrót",
+          "upgrade_failed": "Aktualizacja nie powiodła się",
+          "upgrade_success": "Aktualizacja zakończona pomyślnie",
+          "upgrade_available": "Dostępna aktualizacja",
+          "battery_low_shutdown": "Niski poziom baterii, wyłączanie",
+          "shutdown_soon": "Wkrótce wyłączanie, odstaw do stacji",
+          "cleaning_done_returning": "Sprzątanie zakończone, powrót",
+          "clean_dirty_water_tank": "Opróżnij zbiornik brudnej wody",
+          "schedule_started": "Rozpoczęto zaplanowane sprzątanie",
+          "schedule_conflict": "Harmonogram pominięty (konflikt)",
+          "schedule_skipped_dnd": "Harmonogram pominięty (nie przeszkadzać)",
+          "schedule_low_battery": "Harmonogram pominięty (niska bateria)",
+          "area_not_found": "Nie znaleziono obszaru, sprzątanie przerwane",
+          "lost_return_to_station": "Zgubiony — odstaw robota do stacji",
+          "maintain_side_brush": "Konserwacja: szczotka boczna",
+          "maintain_roller_brush": "Konserwacja: szczotka wałkowa",
+          "maintain_dust_box_filter": "Konserwacja: filtr pojemnika na kurz",
+          "maintain_mop_pads": "Konserwacja: nakładki mopujące",
+          "maintain_dust_bag": "Konserwacja: worek na kurz",
+          "maintain_mop_slot": "Konserwacja: slot mycia mopa",
+          "maintain_dirty_water_filter": "Konserwacja: filtr brudnej wody",
+          "maintain_unit_sensor": "Konserwacja: czujniki robota"
+        }
+      },
+      "station_status": {
+        "name": "Aktywność stacji",
+        "state": {
+          "none": "Brak",
+          "asleep": "Uśpienie",
+          "relocating": "Lokalizowanie",
+          "washing_mop": "Mycie nakładek mopujących",
+          "emptying": "Opróżnianie kurzu",
+          "hot_drying": "Suszenie ciepłym powietrzem",
+          "wind_drying": "Suszenie wentylatorem",
+          "returning_to_wash": "Powrót do czyszczenia",
+          "return_to_wash_paused": "Powrót do mycia wstrzymany",
+          "returning_to_empty": "Powrót do opróżnienia ",
+          "return_to_empty_paused": "Powrót do opróżniania wstrzymany",
+          "returning": "Powrót do stacji",
+          "return_paused": "Powrót wstrzymany",
+          "charging": "Ładowanie",
+          "charged": "Naładowany"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "Prędkość wentylatora",
+        "state": {
+          "quiet": "Cichy",
+          "standard": "Standardowy",
+          "medium_gear": "Średni",
+          "strong": "Mocny",
+          "medium": "Średni",
+          "mode_quiet": "Cichy",
+          "mode_standard": "Standardowy",
+          "mode_medium": "Średni",
+          "mode_strong": "Mocny",
+          "ultra_strong": "Ultra mocny",
+          "off": "Wyłączony",
+          "energy_saving": "Oszczędzanie energii",
+          "powerful": "Potężny",
+          "slient": "Cichy",
+          "turbo": "Turbo",
+          "0": "Cichy",
+          "1": "Oszczędzanie energii",
+          "2": "Standardowy",
+          "3": "Potężny",
+          "close": "Zamknij",
+          "one": "Jeden",
+          "two": "Dwa",
+          "three": "Trzy",
+          "forth": "Cztery",
+          "silent": "Cichy",
+          "basic": "Podstawowy",
+          "full_speed": "Pełna prędkość",
+          "auto": "Auto",
+          "max": "Maksymalny"
+        }
+      },
+      "water_level": {
+        "name": "Poziom wody",
+        "state": {
+          "low_water_level": "Niski poziom wody",
+          "medium_water_level": "Średni poziom wody",
+          "high_water_level": "Wysoki poziom wody",
+          "low": "Niski",
+          "medium": "Średni",
+          "high": "Wysoki",
+          "middle": "Środek",
+          "height": "Wysokość",
+          "mid": "Środek",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "Prędkość 1",
+          "gear_2": "Prędkość 2",
+          "gear_3": "Prędkość 3",
+          "close": "Zamknij",
+          "one": "Jeden",
+          "two": "Dwa",
+          "three": "Trzy",
+          "hig": "Wysoki",
+          "off": "Wyłączony",
+          "level1": "Poziom 1",
+          "level2": "Poziom 2",
+          "level3": "Poziom 3"
+        }
+      },
+      "mode": {
+        "name": "Tryb czyszczenia",
+        "state": {
+          "silent": "Cichy",
+          "basic": "Standardowy",
+          "strong": "Mocny",
+          "full_speed": "Pełna prędkość (Maks.)",
+          "auto": "Automatyczny",
+          "sweep": "Zamiatanie",
+          "sweep_and_mop": "Zamiatanie i mopowanie",
+          "mop": "Mopowanie",
+          "medium": "Średni",
+          "sweepandmop": "Zamiatanie i mopowanie",
+          "sweep_then_mop": "Najpierw zamiatanie, potem mopowanie",
+          "sweep_mop": "Zamiatanie i mopowanie",
+          "sweep_before_mopping": "Zamiatanie przed mopowaniem",
+          "both": "Odkurzanie i mycie",
+          "custom": "Własny"
+        }
+      },
+      "sweep_type": {
+        "name": "Typ zamiata",
+        "state": {
+          "global": "Globalne",
+          "mop": "Mopowanie",
+          "edge": "Śledzenie krawędzi",
+          "area": "Strefa",
+          "point": "Punkt",
+          "remote": "Zdalne sterowanie",
+          "explore": "Mapowanie",
+          "room": "Dostosowanie pokoju",
+          "floor": "Dostosowanie podłogi",
+          "control": "Zdalne sterowanie",
+          "total": "Pełne czyszczenie",
+          "wall": "Czyszczenie krawędzi",
+          "zone": "Czyszczenie strefy",
+          "corner": "Śledzenie krawędzi",
+          "man": "Zdalne sterowanie",
+          "roomprefer": "Dostosowanie pokoju",
+          "materialprefer": "Dostosowanie podłogi",
+          "maping": "Mapowanie w trakcie",
+          "gocharging": "Powrót do stacji",
+          "remotecontrol": "Zdalne sterowanie",
+          "selectroom": "Pokój",
+          "customclean": "Czyszczenie niestandardowe",
+          "costum": "Niestandardowy",
+          "custom_area": "Niestandardowa strefa",
+          "appointment": "Zaplanowane",
+          "linkage": "Powiązanie",
+          "fast": "Szybkie",
+          "ai_hosting": "Hosting AI"
+        }
+      },
+      "active_map": {
+        "name": "Aktywna mapa"
+      },
+      "route": {
+        "name": "Trasa mycia",
+        "state": {
+          "fast": "Szybki",
+          "daily": "Codziennie",
+          "fine": "Dokładne"
+        }
+      },
+      "count": {
+        "name": "Przejścia sprzątania",
+        "state": {
+          "once": "Raz",
+          "twice": "Dwa razy"
+        }
+      },
+      "carpet_prefer": {
+        "name": "Strategia Czyszczenia Dywanu",
+        "state": {
+          "adaptive": "Adapcyjny",
+          "evade": "Unikanie",
+          "carpet_only": "Tylko przejazd",
+          "ignore": "Ignoruj / Zignoruj"
+        }
+      },
+      "dust_collection": {
+        "name": "Automatyczne Opróżnianie",
+        "state": {
+          "none": "Brak automatycznego opróżniania",
+          "every_clean": "Za każdym razem",
+          "medium": "Co 5 sprzątań"
+        }
+      },
+      "drying_time": {
+        "name": "Czas Suszenia",
+        "state": {
+          "120": "2 godziny",
+          "180": "3 godziny",
+          "240": "4 godziny"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "Interwał Mycia",
+        "state": {
+          "5": "5 min",
+          "10": "10 min",
+          "15": "15 min"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "Temperatura czyszczenia mopa",
+        "state": {
+          "normal": "Normalny",
+          "low": "Niski",
+          "high": "Wysoki"
+        }
+      },
+      "voice_language": {
+        "name": "Język komunikatów głosowych",
+        "state": {
+          "chinese": "Mandaryński",
+          "english": "Angielski",
+          "russian": "Rosyjski",
+          "german": "Niemiecki",
+          "italian": "Włoski",
+          "french": "Francuski",
+          "polish": "Polski",
+          "spanish": "Hiszpański",
+          "korean": "Koreański",
+          "chinese_tw": "Chiński (Tajwan)",
+          "vietnamese": "Wietnamski"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "Powtórz czyszczenie"
+      },
+      "alarm": {
+        "name": "Znajdź odkurzacz (sygnał dźwiękowy)"
+      },
+      "child_lock": {
+        "name": "Blokada Dziecięca"
+      },
+      "do_not_disturb": {
+        "name": "Nie Przeszkadzać"
+      },
+      "dnd_no_dust": {
+        "name": "Bez automatycznego opróżniania w trybie NPU"
+      },
+      "dnd_no_dry": {
+        "name": "Bez automatycznego suszenia w trybie NPU"
+      },
+      "break_point": {
+        "name": "Wznów sprzątanie"
+      },
+      "carpet_boost": {
+        "name": "Carpeet Boost"
+      },
+      "auto_drying": {
+        "name": "Automatyczne Suszenie"
+      },
+      "mop_augment": {
+        "name": "Mopowanie Do Krawędzi"
+      },
+      "wash_mop": {
+        "name": "Umyj nakładki mopujące"
+      },
+      "dry_mop": {
+        "name": "Wysusz nakładki mopujące"
+      },
+      "collect_dust": {
+        "name": "Opróżnij kurz"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "Głośność"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "NPU — godzina rozpoczęcia"
+      },
+      "dnd_end_time": {
+        "name": "NPU — godzina zakończenia"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "Resetuj szczotkę boczną"
+      },
+      "reset_main_brush": {
+        "name": "Resetuj szczotkę główną"
+      },
+      "reset_filter": {
+        "name": "Resetuj filtr"
+      },
+      "reset_mop": {
+        "name": "Resetuj mop"
+      },
+      "reset_dust_bag": {
+        "name": "Resetuj worek na kurz"
+      },
+      "reset_mop_trough": {
+        "name": "Resetuj miskę myjącą mop"
+      },
+      "reset_unit_sensor": {
+        "name": "Resetuj czujniki robota"
+      },
+      "fast_building": {
+        "name": "Szybkie mapowanie"
+      },
+      "clean_building": {
+        "name": "Przebuduj mapę"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "Czyść pokój/pokoje",
+      "description": "Rozpocznij czyszczenie jednego lub więcej pokojów według ich ID pokoju z mapy.",
+      "fields": {
+        "segments": {
+          "name": "Pokoje",
+          "description": "Lista ID pokojów do czyszczenia (z atrybutu \"rooms\" kamery mapy)."
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "Odśwież mapę",
+      "description": "Krótko uruchamia odkurzacz, aby wyjechał ze stacji i przesłał nową mapę, a następnie odsyła go do stacji.",
+      "fields": {
+        "confirm_movement": {
+          "name": "Potwierdź ruch",
+          "description": "Musi być true. Odkurzacz na krótko wyjedzie ze stacji i wróci."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "Połącz Xiaomi OAuth",
+        "description": "Otwórz link OAuth Xiaomi. Home Assistant kontynuował będzie automatycznie po powrocie z Xiaomi."
+      },
+      "miot_oauth_code": {
+        "title": "Wklej kod OAuth Xiaomi",
+        "description": "Automatyczne wywołanie zwrotne nie zostało ukończone. Otwórz ten link, zaakceptuj dostęp i wklej kod z paska adresu przekierowania (po 'CODE=' i przed '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Kod OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth połączony",
+        "description": "Uwierzytelnianie mapy w czasie rzeczywistym jest gotowe."
+      },
+      "init": {
+        "title": "Opcje Odkurzacza JONR",
+        "data": {
+          "error_notifications": "Powiadamiaj, gdy robot lub stacja zgłoszą błąd"
+        },
+        "data_description": {
+          "error_notifications": "Trwałe powiadomienia Home Assistant, dodatkowo do zawsze wysyłanych zdarzeń magistrali jonr_vac_error / jonr_vac_station_error."
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "Xiaomi OAuth nie powiodło się. Spróbuj ponownie lub wklej kod ręcznie.",
+      "oauth_region_failed": "Nie udało się ustalić regionu OAuth Xiaomi z tego kodu."
+    },
+    "progress": {
+      "miot_oauth_auth": "Otwórz [Xiaomi OAuth]({authorize_url}) w nowej karcie. Po zatwierdzeniu Xiaomi powinien wrócić do Home Assistant i ten krok zostanie kontynuowany automatycznie."
+    },
+    "abort": {
+      "oauth_local_only": "Ten odkurzacz został dodany jako tylko-lokalny, więc nie ma sesji w chmurze Xiaomi, do której można by połączyć OAuth."
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "Włącz mapę na żywo w czasie rzeczywistym",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "Połącz Xiaomi OAuth",
+            "description": "Odkurzacz działa, ale mapa odświeża się wolno. Połącz Xiaomi OAuth, aby uzyskać mapę na żywo w czasie rzeczywistym (MQTT). Otwórz ten link, zaakceptuj dostęp i wklej kod z paska adresu przekierowania (po 'CODE=' i przed '&'):\n\n{authorize_url}",
+            "data": {
+              "code": "Kod OAuth"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "Xiaomi OAuth nie powiodło się. Rozpocznij łączenie ponownie i wklej nowy kod.",
+          "oauth_region_failed": "Nie udało się ustalić regionu OAuth Xiaomi z tego kodu."
+        },
+        "abort": {
+          "entry_gone": "Ten odkurzacz nie jest już skonfigurowany."
+        }
+      }
+    }
+  }
+}

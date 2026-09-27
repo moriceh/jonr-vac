@@ -114,7 +114,7 @@ def test_different_entry_ids_are_isolated(cache_module) -> None:
 
 def test_corrupted_storage_file_falls_back_to_empty(cache_module) -> None:
     module, fake_store = cache_module
-    fake_store.backing["xiaomi_vac_map_cache_corrupt"] = {"not": "the expected shape"}
+    fake_store.backing["jonr_vac_map_cache_corrupt"] = {"not": "the expected shape"}
     cache = module.MapCache(hass=object(), entry_id="corrupt")
     _run(cache.async_load())
     assert cache.get(1) is None
@@ -124,7 +124,7 @@ def test_corrupted_storage_file_falls_back_to_empty(cache_module) -> None:
 
 def test_schema_version_mismatch_discards_cache(cache_module) -> None:
     module, fake_store = cache_module
-    fake_store.backing["xiaomi_vac_map_cache_oldschema"] = {
+    fake_store.backing["jonr_vac_map_cache_oldschema"] = {
         "version": module.STORAGE_VERSION + 1,
         "maps": {"1": {"map_head_id": 1, "png_b64": "AAAA", "content_hash": "h", "timestamp": 1.0}},
     }
@@ -135,7 +135,7 @@ def test_schema_version_mismatch_discards_cache(cache_module) -> None:
 
 def test_malformed_individual_entry_is_skipped_not_fatal(cache_module) -> None:
     module, fake_store = cache_module
-    fake_store.backing["xiaomi_vac_map_cache_partial"] = {
+    fake_store.backing["jonr_vac_map_cache_partial"] = {
         "version": module.STORAGE_VERSION,
         "maps": {
             "1": {"map_head_id": 1, "png_b64": "not-valid-base64!!", "content_hash": "h", "timestamp": 1.0},

@@ -1,0 +1,665 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aggiunga il Suo aspirapolvere JONR",
+        "description": "Accedi con e-mail per la mappa dal vivo.",
+        "menu_options": {
+          "credentials": "E-mail e password (ottieni la mappa dal vivo)",
+          "local": "IP del dispositivo e token (solo controllo, senza mappa)"
+        }
+      },
+      "credentials": {
+        "title": "Accedi a Mi Home",
+        "description": "Accedi una volta. Rimarrai connesso dopo.",
+        "data": {
+          "username": "E-mail, numero di telefono o ID dell'account Mi",
+          "password": "Password"
+        }
+      },
+      "local": {
+        "title": "Connessione locale",
+        "description": "Indirizzo IP e token a 32 caratteri. Controllo e sensori, nessuna mappa.",
+        "data": {
+          "host": "Indirizzo IP",
+          "token": "Token"
+        }
+      },
+      "captcha": {
+        "title": "Verifica rapida",
+        "description": "Xiaomi vuole assicurarsi che Lei sia reale. Digiti i caratteri seguenti:\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "Caratteri dall'immagine"
+        }
+      },
+      "twofa": {
+        "title": "Immetta il codice",
+        "description": "Xiaomi Le ha appena inviato un codice tramite e-mail. Lo immetta di seguito.",
+        "data": {
+          "code": "Codice di verifica"
+        }
+      },
+      "devices": {
+        "title": "Scelga il Suo aspirapolvere",
+        "description": "Su questo account ci sono più aspirapolveri. Scelga quello da aggiungere.",
+        "data": {
+          "device": "Aspirapolvere"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Accedi di nuovo a Xiaomi",
+        "description": "La Sua sessione è scaduta e non è riuscita a rinnovarsi automaticamente. Accedi di nuovo per ripristinare la mappa dal vivo.",
+        "data": {
+          "username": "E-mail, numero di telefono o ID dell'account Mi",
+          "password": "Password"
+        }
+      },
+      "miot_oauth": {
+        "title": "Attiva l'autenticazione della mappa in tempo reale",
+        "description": "Facoltativo. Prepara il percorso della mappa MQTT in tempo reale. Salta per mantenere l'attuale comportamento di interrogazione della mappa.",
+        "data": {
+          "enable_miot_oauth": "Attiva OAuth per gli aggiornamenti della mappa in tempo reale"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "Collega Xiaomi OAuth",
+        "description": "Apri il link OAuth di Xiaomi. Home Assistant continuerà automaticamente dopo il rientro da Xiaomi."
+      },
+      "miot_oauth_code": {
+        "title": "Incolla il codice OAuth di Xiaomi",
+        "description": "Il callback automatico non si è completato. Apri questo link, approva l'accesso e incolla il codice dalla barra degli indirizzi del redirect (dopo 'CODE=' e prima di '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Codice OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth collegato",
+        "description": "L'autenticazione della mappa in tempo reale è pronta."
+      }
+    },
+    "error": {
+      "unsupported_model": "Questo modello non è ancora supportato.",
+      "cannot_connect": "Non è possibile raggiungere l'aspirapolvere a questo IP con questo token.",
+      "oauth_failed": "Xiaomi OAuth fallito. Riprova il link o incolla il codice manualmente.",
+      "oauth_region_failed": "Impossibile ricavare la regione OAuth di Xiaomi da quel codice."
+    },
+    "abort": {
+      "already_configured": "Questo aspirapolvere è già configurato.",
+      "reauth_successful": "Lei è di nuovo connesso. La mappa dal vivo è stata ripristinata.",
+      "login_failed": "Xiaomi ha rifiutato ({reason}). Verifichi il Suo indirizzo e-mail e la Sua password, quindi riprovi.",
+      "no_devices": "Nessun aspirapolvere supportato su questo account.",
+      "unsupported_model": "Questo modello non è ancora supportato (solo JONR xtl.vacuum.xm2216).",
+      "login_verification_required": "Xiaomi ha bloccato questo accesso e vuole verificare l'account. Accedi su account.xiaomi.com (o nell'app Xiaomi Home), completa la verifica richiesta e riprova."
+    },
+    "progress": {
+      "miot_oauth_auth": "Apri [Xiaomi OAuth]({authorize_url}) in una nuova scheda. Dopo l'approvazione, Xiaomi dovrebbe tornare a Home Assistant e questo passo continuerà automaticamente."
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "Mappa"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stato",
+        "state": {
+          "cleaning": "In pulizia",
+          "paused": "In pausa",
+          "idle": "Inattivo",
+          "returning": "Ritorno alla base",
+          "docked": "In base",
+          "error": "Errore",
+          "localizing": "Localizzazione"
+        }
+      },
+      "battery": {
+        "name": "Batteria"
+      },
+      "main_brush_life": {
+        "name": "Durata spazzola principale"
+      },
+      "side_brush_life": {
+        "name": "Durata spazzola laterale"
+      },
+      "filter_life": {
+        "name": "Durata filtro"
+      },
+      "mop_life": {
+        "name": "Durata panno"
+      },
+      "dust_bag_life": {
+        "name": "Vita utile sacchetto polvere"
+      },
+      "detergent_life": {
+        "name": "Vita utile detergente"
+      },
+      "mop_trough_life": {
+        "name": "Vita utile vaschetta lavaggio panno"
+      },
+      "unit_sensor_life": {
+        "name": "Vita utile sensori del robot"
+      },
+      "session_clean_time": {
+        "name": "Tempo di pulizia (sessione)"
+      },
+      "session_clean_area": {
+        "name": "Area pulita (sessione)"
+      },
+      "total_clean_time": {
+        "name": "Tempo di pulizia totale"
+      },
+      "total_clean_area": {
+        "name": "Area pulita totale"
+      },
+      "total_clean_count": {
+        "name": "Pulizie totali"
+      },
+      "clean_timers": {
+        "name": "Programmi di pulizia"
+      },
+      "clean_water_tank": {
+        "name": "Serbatoio pulito",
+        "state": {
+          "normal": "Normale",
+          "uninstalled": "Disinstallato",
+          "unusable": "Inutilizzabile",
+          "fluid_low": "Livello acqua basso"
+        }
+      },
+      "drain_water_tank": {
+        "name": "Serbatoio sporco",
+        "state": {
+          "normal": "Normale",
+          "uninstalled": "Disinstallato",
+          "unusable": "Inutilizzabile"
+        }
+      },
+      "dust_bag_state": {
+        "name": "Sacchetto della polvere",
+        "state": {
+          "normal": "Installato",
+          "uninstalled": "Disinstallato"
+        }
+      },
+      "mop_tank_state": {
+        "name": "Serbatoio acqua di lavaggio",
+        "state": {
+          "normal": "Installato",
+          "uninstalled": "Disinstallato"
+        }
+      },
+      "robot_error": {
+        "name": "Errore del robot",
+        "state": {
+          "none": "Nessun errore",
+          "dust_box_missing": "Scatola della polvere non installata",
+          "roller_brush_entangled": "Spazzola rullo impigliata",
+          "side_brush_entangled": "Spazzola laterale impigliata",
+          "drive_wheel_blocked": "Ruota motrice bloccata",
+          "drop_sensor_dirty": "Sensore anti-caduta sporco",
+          "laser_obstructed": "Il coperchio del sensore laser è bloccato",
+          "laser_radar_blocked": "Radar laser bloccato",
+          "drive_wheel_slipping": "Ruota motrice che slitta",
+          "laser_cover_jammed": "Il coperchio del sensore laser è bloccato",
+          "robot_stuck": "Il robot è bloccato",
+          "collision_sensor_jammed": "Sensore di collisione inceppato",
+          "robot_suspended": "Il robot è sospeso",
+          "robot_tilted": "Il robot è inclinato",
+          "restricted_zone_start": "Avvio in zona vietata",
+          "carpet_start": "Avvio su tappeto",
+          "mop_holder_entangled": "Il porta tappetino è impigliato",
+          "mop_holder_missing": "Supporto panno non installato",
+          "dust_bag_missing": "La borsa della polvere non è installata",
+          "water_low": "Acqua bassa / serbatoio pulito assente",
+          "dirty_water_full": "Acqua sporca piena / serbatoio assente",
+          "mop_slot_full": "Alloggiamento lavaggio pieno",
+          "mop_slot_full_refill_kit": "Alloggiamento lavaggio pieno (kit di ricarica)",
+          "refill_failed": "Rifornimento automatico fallito",
+          "drain_failed": "Scarico automatico fallito",
+          "solution_low": "Soluzione di pulizia insufficiente"
+        }
+      },
+      "station_error": {
+        "name": "Errore della base",
+        "state": {
+          "none": "Nessun errore",
+          "dust_box_missing": "Scatola della polvere non installata",
+          "roller_brush_entangled": "Spazzola rullo impigliata",
+          "side_brush_entangled": "Spazzola laterale impigliata",
+          "drive_wheel_blocked": "Ruota motrice bloccata",
+          "drop_sensor_dirty": "Sensore anti-caduta sporco",
+          "laser_obstructed": "Il coperchio del sensore laser è bloccato",
+          "laser_radar_blocked": "Radar laser bloccato",
+          "drive_wheel_slipping": "Ruota motrice che slitta",
+          "laser_cover_jammed": "Il coperchio del sensore laser è bloccato",
+          "robot_stuck": "Il robot è bloccato",
+          "collision_sensor_jammed": "Sensore di collisione inceppato",
+          "robot_suspended": "Il robot è sospeso",
+          "robot_tilted": "Il robot è inclinato",
+          "restricted_zone_start": "Avvio in zona vietata",
+          "carpet_start": "Avvio su tappeto",
+          "mop_holder_entangled": "Il porta tappetino è impigliato",
+          "mop_holder_missing": "Supporto panno non installato",
+          "dust_bag_missing": "La borsa della polvere non è installata",
+          "water_low": "Acqua bassa / serbatoio pulito assente",
+          "dirty_water_full": "Acqua sporca piena / serbatoio assente",
+          "mop_slot_full": "Alloggiamento lavaggio pieno",
+          "mop_slot_full_refill_kit": "Alloggiamento lavaggio pieno (kit di ricarica)",
+          "refill_failed": "Rifornimento automatico fallito",
+          "drain_failed": "Scarico automatico fallito",
+          "solution_low": "Soluzione di pulizia insufficiente"
+        }
+      },
+      "robot_message": {
+        "name": "Messaggio del robot",
+        "state": {
+          "none": "Nessuno",
+          "charge_complete_resume": "Ricarica completata, ripresa",
+          "low_battery_return": "Batteria scarica, ritorno",
+          "upgrade_failed": "Aggiornamento fallito",
+          "upgrade_success": "Aggiornamento riuscito",
+          "upgrade_available": "Aggiornamento disponibile",
+          "battery_low_shutdown": "Batteria scarica, spegnimento",
+          "shutdown_soon": "Spegnimento imminente, rimetti nella base",
+          "cleaning_done_returning": "Pulizia completata, ritorno",
+          "clean_dirty_water_tank": "Svuota il serbatoio dell'acqua sporca",
+          "schedule_started": "Pulizia programmata avviata",
+          "schedule_conflict": "Programma saltato (conflitto)",
+          "schedule_skipped_dnd": "Programma saltato (Non disturbare)",
+          "schedule_low_battery": "Programma saltato (batteria scarica)",
+          "area_not_found": "Area non trovata, pulizia terminata",
+          "lost_return_to_station": "Smarrido — riporta il robot nella base",
+          "maintain_side_brush": "Manutenzione: spazzola laterale",
+          "maintain_roller_brush": "Manutenzione: spazzola a rullo",
+          "maintain_dust_box_filter": "Manutenzione: filtro contenitore polvere",
+          "maintain_mop_pads": "Manutenzione: panni",
+          "maintain_dust_bag": "Manutenzione: sacchetto polvere",
+          "maintain_mop_slot": "Manutenzione: alloggiamento lavaggio",
+          "maintain_dirty_water_filter": "Manutenzione: filtro acqua sporca",
+          "maintain_unit_sensor": "Manutenzione: sensori del robot"
+        }
+      },
+      "station_status": {
+        "name": "Attività della base",
+        "state": {
+          "none": "Nessuno",
+          "asleep": "In riposo",
+          "relocating": "Localizzazione",
+          "washing_mop": "Lavaggio dei panni",
+          "emptying": "Svuotamento polvere",
+          "hot_drying": "Asciugatura ad aria calda",
+          "wind_drying": "Asciugatura con ventola",
+          "returning_to_wash": "Ritorno al lavaggio",
+          "return_to_wash_paused": "Ritorno al lavaggio in pausa",
+          "returning_to_empty": "Ritorno allo svuotamento",
+          "return_to_empty_paused": "Ritorno allo svuotamento in pausa",
+          "returning": "Ritorno alla stazione",
+          "return_paused": "Ritorno in pausa",
+          "charging": "Caricamento",
+          "charged": "Caricato"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "Velocità ventola",
+        "state": {
+          "quiet": "Silenzioso",
+          "standard": "Standard",
+          "medium_gear": "Velocità media",
+          "strong": "Forte",
+          "medium": "Medio",
+          "mode_quiet": "Silenzioso",
+          "mode_standard": "Standard",
+          "mode_medium": "Medio",
+          "mode_strong": "Forte",
+          "ultra_strong": "Ultra forte",
+          "off": "Spento",
+          "energy_saving": "Risparmio energetico",
+          "powerful": "Potente",
+          "slient": "Silenzioso",
+          "turbo": "Turbo",
+          "0": "Silenzioso",
+          "1": "Risparmio energetico",
+          "2": "Standard",
+          "3": "Potente",
+          "close": "Chiudi",
+          "one": "Uno",
+          "two": "Due",
+          "three": "Tre",
+          "forth": "Quattro",
+          "silent": "Silenzioso",
+          "basic": "Base",
+          "full_speed": "Velocità massima",
+          "auto": "Auto",
+          "max": "Massimo"
+        }
+      },
+      "water_level": {
+        "name": "Livello d'acqua",
+        "state": {
+          "low_water_level": "Livello d'acqua basso",
+          "medium_water_level": "Livello d'acqua medio",
+          "high_water_level": "Livello d'acqua alto",
+          "low": "Basso",
+          "medium": "Medio",
+          "high": "Alto",
+          "middle": "Mezzo",
+          "height": "Altezza",
+          "mid": "Mezzo",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "Velocità 1",
+          "gear_2": "Velocità 2",
+          "gear_3": "Velocità 3",
+          "close": "Chiudi",
+          "one": "Uno",
+          "two": "Due",
+          "three": "Tre",
+          "hig": "Alto",
+          "off": "Spento",
+          "level1": "Livello 1",
+          "level2": "Livello 2",
+          "level3": "Livello 3"
+        }
+      },
+      "mode": {
+        "name": "Modalità pulizia",
+        "state": {
+          "silent": "Silenzioso",
+          "basic": "Standard",
+          "strong": "Forte",
+          "full_speed": "Velocità massima (Max)",
+          "auto": "Automatico",
+          "sweep": "Spazzata",
+          "sweep_and_mop": "Spazzata e passata",
+          "mop": "Passata",
+          "medium": "Velocità media",
+          "sweepandmop": "Spazzata e passata",
+          "sweep_then_mop": "Prima spazzare, poi passare",
+          "sweep_mop": "Spazzata e passata",
+          "sweep_before_mopping": "Spazzare prima di passare",
+          "both": "Aspirazione e lavaggio",
+          "custom": "Personalizzato"
+        }
+      },
+      "sweep_type": {
+        "name": "Tipo di spazzata",
+        "state": {
+          "global": "Globale",
+          "mop": "Passata",
+          "edge": "Seguimento bordi",
+          "area": "Area",
+          "point": "Punto",
+          "remote": "Controllo remoto",
+          "explore": "Mappatura",
+          "room": "Personalizzazione stanza",
+          "floor": "Personalizzazione pavimento",
+          "control": "Controllo remoto",
+          "total": "Pulizia globale",
+          "wall": "Pulizia bordi",
+          "zone": "Pulizia zona",
+          "corner": "Seguimento bordi",
+          "man": "Controllo remoto",
+          "roomprefer": "Personalizzazione stanza",
+          "materialprefer": "Personalizzazione pavimento",
+          "maping": "Mappatura in corso",
+          "gocharging": "Ritorno alla base",
+          "remotecontrol": "Controllo remoto",
+          "selectroom": "Stanza",
+          "customclean": "Pulizia personalizzata",
+          "costum": "Personalizzato",
+          "custom_area": "Area personalizzata",
+          "appointment": "Programmato",
+          "linkage": "Collegamento",
+          "fast": "Veloce",
+          "ai_hosting": "Hosting IA"
+        }
+      },
+      "active_map": {
+        "name": "Mappa attiva"
+      },
+      "route": {
+        "name": "Percorso di lavaggio",
+        "state": {
+          "fast": "Veloce",
+          "daily": "Giornaliero",
+          "fine": "Approfondito"
+        }
+      },
+      "count": {
+        "name": "Passate di pulizia",
+        "state": {
+          "once": "Una volta",
+          "twice": "Due volte"
+        }
+      },
+      "carpet_prefer": {
+        "name": "Strategia Di Pulizia Dei Tappeti",
+        "state": {
+          "adaptive": "Adattivo",
+          "evade": "Evitare",
+          "carpet_only": "Solo passaggio",
+          "ignore": "Ignora"
+        }
+      },
+      "dust_collection": {
+        "name": "Svuotamento Automatico",
+        "state": {
+          "none": "Nessun auto-svuotamento",
+          "every_clean": "Ogni volta",
+          "medium": "Ogni 5 pulizie"
+        }
+      },
+      "drying_time": {
+        "name": "Durata Dell'Asciugatura",
+        "state": {
+          "120": "2 ore",
+          "180": "3 ore",
+          "240": "4 ore"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "Intervallo Di Lavaggio",
+        "state": {
+          "5": "5 min",
+          "10": "10 min",
+          "15": "15 min"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "Temperatura di pulizia del mop",
+        "state": {
+          "normal": "Normale",
+          "low": "Basso",
+          "high": "Alta"
+        }
+      },
+      "voice_language": {
+        "name": "Lingua degli annunci vocali",
+        "state": {
+          "chinese": "Mandarino",
+          "english": "Inglese",
+          "russian": "Russo",
+          "german": "Tedesco",
+          "italian": "Italiano",
+          "french": "Francese",
+          "polish": "Polacco",
+          "spanish": "Spagnolo",
+          "korean": "Coreano",
+          "chinese_tw": "Cinese (Taiwan)",
+          "vietnamese": "Vietnamita"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "Ripeti pulizia"
+      },
+      "alarm": {
+        "name": "Trova aspirapolvere (bip)"
+      },
+      "child_lock": {
+        "name": "Blocco Bambini"
+      },
+      "do_not_disturb": {
+        "name": "Non Disturbare"
+      },
+      "dnd_no_dust": {
+        "name": "Nessuno svuotamento automatico durante Non disturbare"
+      },
+      "dnd_no_dry": {
+        "name": "Nessuna asciugatura automatica durante Non disturbare"
+      },
+      "break_point": {
+        "name": "Riprendi pulizia"
+      },
+      "carpet_boost": {
+        "name": "Potenziamento Del Tappeto"
+      },
+      "auto_drying": {
+        "name": "Asciugatura Automatica"
+      },
+      "mop_augment": {
+        "name": "Mop Fino Al Bordo"
+      },
+      "wash_mop": {
+        "name": "Lava i panni"
+      },
+      "dry_mop": {
+        "name": "Asciuga i panni"
+      },
+      "collect_dust": {
+        "name": "Svuota la polvere"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "Volume"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "Non disturbare - Ora di inizio"
+      },
+      "dnd_end_time": {
+        "name": "Non disturbare - Ora di fine"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "Reimposta spazzola laterale"
+      },
+      "reset_main_brush": {
+        "name": "Reimposta spazzola principale"
+      },
+      "reset_filter": {
+        "name": "Reimposta filtro"
+      },
+      "reset_mop": {
+        "name": "Reimposta panno"
+      },
+      "reset_dust_bag": {
+        "name": "Reimposta sacchetto polvere"
+      },
+      "reset_mop_trough": {
+        "name": "Reimposta vaschetta lavaggio panno"
+      },
+      "reset_unit_sensor": {
+        "name": "Reimposta sensori del robot"
+      },
+      "fast_building": {
+        "name": "Mappatura rapida"
+      },
+      "clean_building": {
+        "name": "Ricostruisci la mappa"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "Pulisci stanza(e)",
+      "description": "Inizia la pulizia di una o più stanze in base al loro ID stanza della mappa.",
+      "fields": {
+        "segments": {
+          "name": "Stanze",
+          "description": "Elenco degli ID stanza da pulire (dall'attributo \"rooms\" della telecamera della mappa)."
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "Aggiorna la mappa",
+      "description": "Avvia brevemente l'aspirapolvere così esce dalla base e carica una mappa nuova, poi lo rimanda nella base.",
+      "fields": {
+        "confirm_movement": {
+          "name": "Conferma il movimento",
+          "description": "Deve essere true. L'aspirapolvere uscirà brevemente dalla base e farà ritorno."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "Collega Xiaomi OAuth",
+        "description": "Apri il link OAuth di Xiaomi. Home Assistant continuerà automaticamente dopo il rientro da Xiaomi."
+      },
+      "miot_oauth_code": {
+        "title": "Incolla il codice OAuth di Xiaomi",
+        "description": "Il callback automatico non si è completato. Apri questo link, approva l'accesso e incolla il codice dalla barra degli indirizzi del redirect (dopo 'CODE=' e prima di '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Codice OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth collegato",
+        "description": "L'autenticazione della mappa in tempo reale è pronta."
+      },
+      "init": {
+        "title": "Opzioni Aspirapolvere JONR",
+        "data": {
+          "error_notifications": "Notifica quando il robot o la base segnalano un errore"
+        },
+        "data_description": {
+          "error_notifications": "Notifiche persistenti di Home Assistant, oltre agli eventi bus jonr_vac_error / jonr_vac_station_error sempre emessi."
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "Xiaomi OAuth fallito. Riprova il link o incolla il codice manualmente.",
+      "oauth_region_failed": "Impossibile ricavare la regione OAuth di Xiaomi da quel codice."
+    },
+    "progress": {
+      "miot_oauth_auth": "Apri [Xiaomi OAuth]({authorize_url}) in una nuova scheda. Dopo l'approvazione, Xiaomi dovrebbe tornare a Home Assistant e questo passo continuerà automaticamente."
+    },
+    "abort": {
+      "oauth_local_only": "Questo aspirapolvere è stato aggiunto come solo-locale, quindi non ha una sessione cloud Xiaomi a cui collegare OAuth."
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "Attiva la mappa live in tempo reale",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "Collega Xiaomi OAuth",
+            "description": "L'aspirapolvere funziona, ma la mappa si aggiorna lentamente. Collega Xiaomi OAuth per la mappa live in tempo reale (MQTT). Apri questo link, approva l'accesso e incolla il codice dalla barra degli indirizzi del redirect (dopo 'CODE=' e prima di '&'):\n\n{authorize_url}",
+            "data": {
+              "code": "Codice OAuth"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "Xiaomi OAuth fallito. Riavvia il collegamento e incolla il nuovo codice.",
+          "oauth_region_failed": "Impossibile ricavare la regione OAuth di Xiaomi da quel codice."
+        },
+        "abort": {
+          "entry_gone": "Quell'aspirapolvere non è più configurato."
+        }
+      }
+    }
+  }
+}

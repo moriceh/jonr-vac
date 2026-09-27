@@ -1,0 +1,665 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Voeg uw JONR stofzuiger toe",
+        "description": "Meld u aan met e-mail voor de live kaart.",
+        "menu_options": {
+          "credentials": "E-mail en wachtwoord (krijg de live kaart)",
+          "local": "Apparaat-IP en token (alleen bedieningselementen, geen kaart)"
+        }
+      },
+      "credentials": {
+        "title": "Meld u aan bij Mi Home",
+        "description": "Meld u eenmaal aan. U blijft daarna ingelogd.",
+        "data": {
+          "username": "E-mail, telefoonnummer of Mi-account-ID",
+          "password": "Wachtwoord"
+        }
+      },
+      "local": {
+        "title": "Lokale verbinding",
+        "description": "IP-adres en 32-teken token. Bediening en sensoren, geen kaart.",
+        "data": {
+          "host": "IP-adres",
+          "token": "Token"
+        }
+      },
+      "captcha": {
+        "title": "Snelle controle",
+        "description": "Xiaomi wil zeker weten dat u echt bent. Typ de onderstaande tekens:\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "Tekens uit de afbeelding"
+        }
+      },
+      "twofa": {
+        "title": "Voer de code in",
+        "description": "Xiaomi heeft u zojuist een code per e-mail gestuurd. Voer deze hieronder in.",
+        "data": {
+          "code": "Verificatiecode"
+        }
+      },
+      "devices": {
+        "title": "Kies uw stofzuiger",
+        "description": "Er is meer dan een stofzuiger op deze account. Kies degene die u wilt toevoegen.",
+        "data": {
+          "device": "Stofzuiger"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Meld u opnieuw aan bij Xiaomi",
+        "description": "Uw sessie is verlopen en kon niet automatisch worden vernieuwd. Meld u opnieuw aan om de live kaart herstellen.",
+        "data": {
+          "username": "E-mail, telefoonnummer of Mi-account-ID",
+          "password": "Wachtwoord"
+        }
+      },
+      "miot_oauth": {
+        "title": "Realtime-kaartauthenticatie inschakelen",
+        "description": "Optioneel. Dit bereidt het realtime MQTT-kaartpad voor. Overslaan om het huidige pollinggedrag te behouden.",
+        "data": {
+          "enable_miot_oauth": "OAuth inschakelen voor realtime kaartupdates"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "Xiaomi OAuth koppelen",
+        "description": "Open de Xiaomi OAuth-link. Home Assistant gaat automatisch verder nadat Xiaomi terugstuurt."
+      },
+      "miot_oauth_code": {
+        "title": "Xiaomi OAuth-code plakken",
+        "description": "De automatische callback is niet voltooid. Open deze link, sta toegang toe en plak de code uit de adresbalk van de omleiding (na 'CODE=' en vóór '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "OAuth-code"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth gekoppeld",
+        "description": "De realtime kaartauthenticatie is gereed."
+      }
+    },
+    "error": {
+      "unsupported_model": "Dit model wordt nog niet ondersteund.",
+      "cannot_connect": "Kan de stofzuiger niet bereiken op dat IP-adres met dat token.",
+      "oauth_failed": "Xiaomi OAuth mislukt. Probeer de link opnieuw of plak de code handmatig.",
+      "oauth_region_failed": "Kon de Xiaomi OAuth-regio niet uit die code afleiden."
+    },
+    "abort": {
+      "already_configured": "Deze stofzuiger is al ingesteld.",
+      "reauth_successful": "U bent weer ingelogd. De live kaart is hersteld.",
+      "login_failed": "Xiaomi weigert dit ({reason}). Controleer uw e-mail en wachtwoord en probeer het opnieuw.",
+      "no_devices": "Geen ondersteunde stofzuigers op deze account.",
+      "unsupported_model": "Dit model wordt nog niet ondersteund (alleen JONR xtl.vacuum.xm2216).",
+      "login_verification_required": "Xiaomi heeft deze aanmelding geblokkeerd en wil het account verifiëren. Meld aan op account.xiaomi.com (of de Xiaomi Home-app), voltooi de vereiste verificatie en probeer het opnieuw."
+    },
+    "progress": {
+      "miot_oauth_auth": "Open [Xiaomi OAuth]({authorize_url}) in een nieuw tabblad. Na goedkeuring stuurt Xiaomi terug naar Home Assistant en gaat deze stap automatisch verder."
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "Kaart"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "cleaning": "Aan het schoonmaken",
+          "paused": "Gepauzeerd",
+          "idle": "Inactief",
+          "returning": "Keert terug naar station",
+          "docked": "In station",
+          "error": "Fout",
+          "localizing": "Lokaliseren…"
+        }
+      },
+      "battery": {
+        "name": "Batterij"
+      },
+      "main_brush_life": {
+        "name": "Levensduur hoofdborstel"
+      },
+      "side_brush_life": {
+        "name": "Levensduur bijborstel"
+      },
+      "filter_life": {
+        "name": "Levensduur filter"
+      },
+      "mop_life": {
+        "name": "Levensduur zwabber"
+      },
+      "dust_bag_life": {
+        "name": "Levensduur stofzak"
+      },
+      "detergent_life": {
+        "name": "Levensduur reinigingsvloeistof"
+      },
+      "mop_trough_life": {
+        "name": "Levensduur dweulbak"
+      },
+      "unit_sensor_life": {
+        "name": "Levensduur robotsensoren"
+      },
+      "session_clean_time": {
+        "name": "Schoontijd (sessie)"
+      },
+      "session_clean_area": {
+        "name": "Schoonoppervlak (sessie)"
+      },
+      "total_clean_time": {
+        "name": "Totale schontijd"
+      },
+      "total_clean_area": {
+        "name": "Totaal schoonoppervlak"
+      },
+      "total_clean_count": {
+        "name": "Totaal aantal beurten"
+      },
+      "clean_timers": {
+        "name": "Schoonmaakroosters"
+      },
+      "clean_water_tank": {
+        "name": "Zoetwatertank",
+        "state": {
+          "normal": "Normaal",
+          "uninstalled": "Niet geïnstalleerd",
+          "unusable": "Onbruikbaar",
+          "fluid_low": "Waterniveau laag"
+        }
+      },
+      "drain_water_tank": {
+        "name": "Vuilwatertank",
+        "state": {
+          "normal": "Normaal",
+          "uninstalled": "Niet geïnstalleerd",
+          "unusable": "Onbruikbaar"
+        }
+      },
+      "dust_bag_state": {
+        "name": "Stofzak",
+        "state": {
+          "normal": "Geïnstalleerd",
+          "uninstalled": "Niet geïnstalleerd"
+        }
+      },
+      "mop_tank_state": {
+        "name": "Dweulwatertank",
+        "state": {
+          "normal": "Geïnstalleerd",
+          "uninstalled": "Niet geïnstalleerd"
+        }
+      },
+      "robot_error": {
+        "name": "Robotfout",
+        "state": {
+          "none": "Geen fout",
+          "dust_box_missing": "Stofbak niet geplaatst",
+          "roller_brush_entangled": "Rolborstel verstrengeld",
+          "side_brush_entangled": "Zijborstel verstrengeld",
+          "drive_wheel_blocked": "Aandrijfwiel geblokkeerd",
+          "drop_sensor_dirty": "Valbeveiligingssensor vuil",
+          "laser_obstructed": "Lasersensor geblokkeerd",
+          "laser_radar_blocked": "Laserradar geblokkeerd",
+          "drive_wheel_slipping": "Aandrijfwiel slippt",
+          "laser_cover_jammed": "Lasersensorafdekking klem",
+          "robot_stuck": "Robot vastgelopen",
+          "collision_sensor_jammed": "Botsensor klem",
+          "robot_suspended": "Robot opgetild",
+          "robot_tilted": "Robot gekanteld",
+          "restricted_zone_start": "Gestart in verboden zone",
+          "carpet_start": "Gestart op vloerkleed",
+          "mop_holder_entangled": "Dweulhouder verstrengeld",
+          "mop_holder_missing": "Dweulhouder niet geplaatst",
+          "dust_bag_missing": "Stofzak ontbreekt",
+          "water_low": "Water laag / schone tank ontbreekt",
+          "dirty_water_full": "Vuilwater vol / tank ontbreekt",
+          "mop_slot_full": "Dweulslot vol",
+          "mop_slot_full_refill_kit": "Dweulslot vol (navulset)",
+          "refill_failed": "Automatisch bijvullen mislukt",
+          "drain_failed": "Automatisch afvoeren mislukt",
+          "solution_low": "Reinigingsvloeistof laag"
+        }
+      },
+      "station_error": {
+        "name": "Dockfout",
+        "state": {
+          "none": "Geen fout",
+          "dust_box_missing": "Stofbak niet geplaatst",
+          "roller_brush_entangled": "Rolborstel verstrengeld",
+          "side_brush_entangled": "Zijborstel verstrengeld",
+          "drive_wheel_blocked": "Aandrijfwiel geblokkeerd",
+          "drop_sensor_dirty": "Valbeveiligingssensor vuil",
+          "laser_obstructed": "Lasersensor geblokkeerd",
+          "laser_radar_blocked": "Laserradar geblokkeerd",
+          "drive_wheel_slipping": "Aandrijfwiel slippt",
+          "laser_cover_jammed": "Lasersensorafdekking klem",
+          "robot_stuck": "Robot vastgelopen",
+          "collision_sensor_jammed": "Botsensor klem",
+          "robot_suspended": "Robot opgetild",
+          "robot_tilted": "Robot gekanteld",
+          "restricted_zone_start": "Gestart in verboden zone",
+          "carpet_start": "Gestart op vloerkleed",
+          "mop_holder_entangled": "Dweulhouder verstrengeld",
+          "mop_holder_missing": "Dweulhouder niet geplaatst",
+          "dust_bag_missing": "Stofzak ontbreekt",
+          "water_low": "Water laag / schone tank ontbreekt",
+          "dirty_water_full": "Vuilwater vol / tank ontbreekt",
+          "mop_slot_full": "Dweulslot vol",
+          "mop_slot_full_refill_kit": "Dweulslot vol (navulset)",
+          "refill_failed": "Automatisch bijvullen mislukt",
+          "drain_failed": "Automatisch afvoeren mislukt",
+          "solution_low": "Reinigingsvloeistof laag"
+        }
+      },
+      "robot_message": {
+        "name": "Robotbericht",
+        "state": {
+          "none": "Geen",
+          "charge_complete_resume": "Opladen voltooid, hervat",
+          "low_battery_return": "Batterij laag, terugkeren",
+          "upgrade_failed": "Update mislukt",
+          "upgrade_success": "Update gelukt",
+          "upgrade_available": "Update beschikbaar",
+          "battery_low_shutdown": "Batterij laag, sluit af",
+          "shutdown_soon": "Sluit binnen af, zet terug in dock",
+          "cleaning_done_returning": "Schoonen voltooid, terugkeren",
+          "clean_dirty_water_tank": "Maak de vuilwatertank leeg",
+          "schedule_started": "Geplande schoonmaak gestart",
+          "schedule_conflict": "Planning overgeslagen (conflict)",
+          "schedule_skipped_dnd": "Planning overgeslagen (niet storen)",
+          "schedule_low_battery": "Planning overgeslagen (batterij laag)",
+          "area_not_found": "Gebied niet gevonden, schoonmaak gestopt",
+          "lost_return_to_station": "Verloren — zet de robot terug in het dock",
+          "maintain_side_brush": "Onderhoud: zijborstel",
+          "maintain_roller_brush": "Onderhoud: rolborstel",
+          "maintain_dust_box_filter": "Onderhoud: stofbakfilter",
+          "maintain_mop_pads": "Onderhoud: dweilen",
+          "maintain_dust_bag": "Onderhoud: stofzak",
+          "maintain_mop_slot": "Onderhoud: dweulslot",
+          "maintain_dirty_water_filter": "Onderhoud: vuilwaterfilter",
+          "maintain_unit_sensor": "Onderhoud: robotsensoren"
+        }
+      },
+      "station_status": {
+        "name": "Dockactiviteit",
+        "state": {
+          "none": "Geen",
+          "asleep": "Sluimerstand",
+          "relocating": "Bezig met lokaliseren",
+          "washing_mop": "Dweilen worden gewassen",
+          "emptying": "Stof wordt opgezogen",
+          "hot_drying": "Warme-lucht-drogen",
+          "wind_drying": "Ventilatordrogen",
+          "returning_to_wash": "Terug naar wassen",
+          "return_to_wash_paused": "Terug naar wassen gepauzeerd",
+          "returning_to_empty": "Terug naar legen",
+          "return_to_empty_paused": "Terug naar legen gepauzeerd",
+          "returning": "Terugvaren",
+          "return_paused": "Terugkeer gepauzeerd",
+          "charging": "Opladen",
+          "charged": "Opgeladen"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "Ventilatorsnelheid",
+        "state": {
+          "quiet": "Stil",
+          "standard": "Standaard",
+          "medium_gear": "Gemiddeld",
+          "strong": "Sterk",
+          "medium": "Gemiddeld",
+          "mode_quiet": "Stil",
+          "mode_standard": "Standaard",
+          "mode_medium": "Gemiddeld",
+          "mode_strong": "Sterk",
+          "ultra_strong": "Ultra sterk",
+          "off": "Uit",
+          "energy_saving": "Energiebesparing",
+          "powerful": "Krachtig",
+          "slient": "Stil",
+          "turbo": "Turbo",
+          "0": "Stil",
+          "1": "Energiebesparing",
+          "2": "Standaard",
+          "3": "Krachtig",
+          "close": "Sluiten",
+          "one": "Één",
+          "two": "Twee",
+          "three": "Drie",
+          "forth": "Vier",
+          "silent": "Stil",
+          "basic": "Basis",
+          "full_speed": "Volledige snelheid",
+          "auto": "Automatisch",
+          "max": "Maximaal"
+        }
+      },
+      "water_level": {
+        "name": "Waterniveau",
+        "state": {
+          "low_water_level": "Laag waterniveau",
+          "medium_water_level": "Gemiddeld waterniveau",
+          "high_water_level": "Hoog waterniveau",
+          "low": "Laag",
+          "medium": "Gemiddeld",
+          "high": "Hoog",
+          "middle": "Midden",
+          "height": "Hoogte",
+          "mid": "Midden",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "Snelheid 1",
+          "gear_2": "Snelheid 2",
+          "gear_3": "Snelheid 3",
+          "close": "Sluiten",
+          "one": "Één",
+          "two": "Twee",
+          "three": "Drie",
+          "hig": "Hoog",
+          "off": "Uit",
+          "level1": "Niveau 1",
+          "level2": "Niveau 2",
+          "level3": "Niveau 3"
+        }
+      },
+      "mode": {
+        "name": "Schoonmaakstand",
+        "state": {
+          "silent": "Stil",
+          "basic": "Standaard",
+          "strong": "Sterk",
+          "full_speed": "Volledige snelheid (Maximum)",
+          "auto": "Automatisch",
+          "sweep": "Vegen",
+          "sweep_and_mop": "Vegen en zwabben",
+          "mop": "Zwabben",
+          "medium": "Gemiddeld",
+          "sweepandmop": "Vegen en zwabben",
+          "sweep_then_mop": "Eerst vegen, dan zwabben",
+          "sweep_mop": "Vegen en zwabben",
+          "sweep_before_mopping": "Voor het zwabben vegen",
+          "both": "Vegen en dweilen",
+          "custom": "Aangepast"
+        }
+      },
+      "sweep_type": {
+        "name": "Vegtype",
+        "state": {
+          "global": "Globaal",
+          "mop": "Zwabben",
+          "edge": "Randvolgeling",
+          "area": "Gebied",
+          "point": "Punt",
+          "remote": "Afstandsbediening",
+          "explore": "Kaartmaking",
+          "room": "Kameraanpassing",
+          "floor": "Vloeraanpassing",
+          "control": "Afstandsbediening",
+          "total": "Algehele schoonmaak",
+          "wall": "Randschoonmaak",
+          "zone": "Zonereinigung",
+          "corner": "Randvolgeling",
+          "man": "Afstandsbediening",
+          "roomprefer": "Kameraanpassing",
+          "materialprefer": "Vloeraanpassing",
+          "maping": "Kaartmaking bezig",
+          "gocharging": "Terug naar station",
+          "remotecontrol": "Afstandsbediening",
+          "selectroom": "Kamer",
+          "customclean": "Aangepaste schoonmaak",
+          "costum": "Aangepast",
+          "custom_area": "Aangepast gebied",
+          "appointment": "Gepland",
+          "linkage": "Koppeling",
+          "fast": "Snel",
+          "ai_hosting": "AI-hosting"
+        }
+      },
+      "active_map": {
+        "name": "Actieve kaart"
+      },
+      "route": {
+        "name": "Dweulroute",
+        "state": {
+          "fast": "Snel",
+          "daily": "Dagelijks",
+          "fine": "Grondig"
+        }
+      },
+      "count": {
+        "name": "Aantal schoonmaakbeurten",
+        "state": {
+          "once": "Eén keer",
+          "twice": "Twee keer"
+        }
+      },
+      "carpet_prefer": {
+        "name": "Vloerkleedstrategie",
+        "state": {
+          "adaptive": "Aanpassingsvermogen",
+          "evade": "Vermijden",
+          "carpet_only": "Eén keer passeren",
+          "ignore": "Negeren"
+        }
+      },
+      "dust_collection": {
+        "name": "Automatisch stof legen",
+        "state": {
+          "none": "Niet automatisch legen",
+          "every_clean": "Elke keer",
+          "medium": "Elke 5 beurten"
+        }
+      },
+      "drying_time": {
+        "name": "Dweildroogtijd",
+        "state": {
+          "120": "2 uur",
+          "180": "3 uur",
+          "240": "4 uur"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "Wasinterval",
+        "state": {
+          "5": "5 min",
+          "10": "10 min",
+          "15": "15 min"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "Dweul wastemperatuur",
+        "state": {
+          "normal": "Normaal",
+          "low": "Laag",
+          "high": "Hoog"
+        }
+      },
+      "voice_language": {
+        "name": "Taal van spraakberichten",
+        "state": {
+          "chinese": "Chinees",
+          "english": "Engels",
+          "russian": "Russisch",
+          "german": "Duits",
+          "italian": "Italiaans",
+          "french": "Frans",
+          "polish": "Pools",
+          "spanish": "Spaans",
+          "korean": "Koreaans",
+          "chinese_tw": "Chinees (Taiwan)",
+          "vietnamese": "Vietnamees"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "Schoonmaak herhalen"
+      },
+      "alarm": {
+        "name": "Stofzuiger zoeken (piep)"
+      },
+      "child_lock": {
+        "name": "Kinderslot"
+      },
+      "do_not_disturb": {
+        "name": "Niet storen"
+      },
+      "dnd_no_dust": {
+        "name": "Geen automatisch legen tijdens NPT"
+      },
+      "dnd_no_dry": {
+        "name": "Geen automatisch drogen tijdens NPT"
+      },
+      "break_point": {
+        "name": "Schoonmaak hervatten"
+      },
+      "carpet_boost": {
+        "name": "Vloerkleedboost"
+      },
+      "auto_drying": {
+        "name": "Automatisch drogen"
+      },
+      "mop_augment": {
+        "name": "Dweilen tot langs de rand"
+      },
+      "wash_mop": {
+        "name": "Dweilen wassen"
+      },
+      "dry_mop": {
+        "name": "Dweilen drogen"
+      },
+      "collect_dust": {
+        "name": "Stofbak legen"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "Volume"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "NPT - Starttijd"
+      },
+      "dnd_end_time": {
+        "name": "NPT - Eindtijd"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "Zijborstel resetten"
+      },
+      "reset_main_brush": {
+        "name": "Hoofdborstel resetten"
+      },
+      "reset_filter": {
+        "name": "Filter resetten"
+      },
+      "reset_mop": {
+        "name": "Dweil resetten"
+      },
+      "reset_dust_bag": {
+        "name": "Stofzak resetten"
+      },
+      "reset_mop_trough": {
+        "name": "Dweulbak resetten"
+      },
+      "reset_unit_sensor": {
+        "name": "Robotsensoren resetten"
+      },
+      "fast_building": {
+        "name": "Snel karteren"
+      },
+      "clean_building": {
+        "name": "Kaart herbouwen"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "Kamer(s) schoonmaken",
+      "description": "Begin met schoonmaken van een of meer kamers op basis van hun kaartkaamer-ID.",
+      "fields": {
+        "segments": {
+          "name": "Kamers",
+          "description": "Lijst met kaameraID's om schoon te maken (van het attribuut \"rooms\" van de kaartcamera)."
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "Kaart vernieuwen",
+      "description": "Start de stofzuiger kort zodat hij het dock verlaat en een verse kaart uploadt, en stuurt hem daarna terug.",
+      "fields": {
+        "confirm_movement": {
+          "name": "Beweging bevestigen",
+          "description": "Moet true zijn. De stofzuiger verlaat het dock kort en keert terug."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "Xiaomi OAuth koppelen",
+        "description": "Open de Xiaomi OAuth-link. Home Assistant gaat automatisch verder nadat Xiaomi terugstuurt."
+      },
+      "miot_oauth_code": {
+        "title": "Xiaomi OAuth-code plakken",
+        "description": "De automatische callback is niet voltooid. Open deze link, sta toegang toe en plak de code uit de adresbalk van de omleiding (na 'CODE=' en vóór '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "OAuth-code"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth gekoppeld",
+        "description": "De realtime kaartauthenticatie is gereed."
+      },
+      "init": {
+        "title": "JONR Vacuum-opties",
+        "data": {
+          "error_notifications": "Melden wanneer de robot of het dock een fout meldt"
+        },
+        "data_description": {
+          "error_notifications": "Persistente Home Assistant-meldingen, naast de altijd verzonden jonr_vac_error / jonr_vac_station_error busgebeurtenissen."
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "Xiaomi OAuth mislukt. Probeer de link opnieuw of plak de code handmatig.",
+      "oauth_region_failed": "Kon de Xiaomi OAuth-regio niet uit die code afleiden."
+    },
+    "progress": {
+      "miot_oauth_auth": "Open [Xiaomi OAuth]({authorize_url}) in een nieuw tabblad. Na goedkeuring stuurt Xiaomi terug naar Home Assistant en gaat deze stap automatisch verder."
+    },
+    "abort": {
+      "oauth_local_only": "Deze stofzuiger is als alleen-lokaal toegevoegd en heeft dus geen Xiaomi-cloudsessie om OAuth aan te koppelen."
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "Realtime livekaart aanzetten",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "Xiaomi OAuth koppelen",
+            "description": "Uw stofzuiger werkt, maar de kaart ververst traag. Koppel Xiaomi OAuth voor de realtime (MQTT) livekaart. Open deze link, sta toegang toe en plak de code uit de adresbalk van de omleiding (na 'CODE=' en vóór '&'):\n\n{authorize_url}",
+            "data": {
+              "code": "OAuth-code"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "Xiaomi OAuth mislukt. Start de koppeling opnieuw en plak de nieuwe code.",
+          "oauth_region_failed": "Kon de Xiaomi OAuth-regio niet uit die code afleiden."
+        },
+        "abort": {
+          "entry_gone": "Deze stofzuiger is niet meer ingesteld."
+        }
+      }
+    }
+  }
+}

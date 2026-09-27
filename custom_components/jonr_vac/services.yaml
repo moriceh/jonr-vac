@@ -1,0 +1,364 @@
+clean_segment:
+  name: Clean room(s)
+  description: Start cleaning one or more rooms by their map room id.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    segments:
+      name: Rooms
+      description: List of room ids to clean (from the map camera's "rooms" attribute).
+      required: true
+      example: "[11, 12]"
+      selector:
+        object:
+    repeats:
+      name: Passes
+      description: >-
+        Cleaning passes for this task (xtl models — the map card's ×N button;
+        writes the global pass count before the task starts). Omit to keep
+        the current count-select value.
+      required: false
+      example: 2
+      selector:
+        number:
+          min: 1
+          max: 2
+          step: 1
+
+refresh_map:
+  name: Refresh map
+  description: Briefly starts the vacuum so it leaves the dock and uploads a fresh map, then sends it back to dock.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    confirm_movement:
+      name: Confirm movement
+      description: Must be true. The vacuum will briefly leave the dock and return.
+      required: true
+      example: true
+      selector:
+        boolean:
+
+set_room_clean_mode:
+  name: Set room cleaning mode
+  description: >-
+    Personalised per-room settings, like the official app's room panel
+    (xtl models). Fields you omit keep the room's saved setting, then the
+    robot's current global value, then the firmware default. Cleaning mode
+    is switched to "custom" automatically — per-room values only apply in
+    that mode.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    room_id:
+      name: Room
+      description: Map room id (from the map camera's "rooms" attribute).
+      required: true
+      example: 16
+      selector:
+        number:
+          mode: box
+    work_mode:
+      name: Cleaning mode
+      description: "0 sweep+mop, 1 sweep only, 2 mop only, 3 sweep then mop."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: box
+    fan:
+      name: Suction
+      description: "0 quiet, 1 auto, 2 strong, 3 max."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: box
+    water:
+      name: Water level
+      description: "0 low, 1 mid, 2 high."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 2
+          mode: box
+    passes:
+      name: Passes
+      description: "1 or 2."
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 2
+          mode: box
+    route:
+      name: Mop route
+      description: "0 fast, 1 daily, 2 fine (zigzag)."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 2
+          mode: box
+
+reset_room_clean_modes:
+  name: Reset room cleaning modes
+  description: >-
+    Restore every room on the current map to the firmware defaults
+    (sweep+mop / auto fan / mid water / one pass / daily route), like the
+    official app's "default" button. Only for xtl models.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+
+set_clean_sequence:
+  name: Set whole-home cleaning sequence
+  description: >-
+    Save the order the robot cleans rooms during a whole-home clean (the
+    official app's custom order, xtl models). Pass an empty list to clear
+    the sequence. An ongoing whole-home clean reorders live on some
+    firmwares.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    rooms:
+      name: Rooms
+      description: >-
+        Ordered list of map room ids — first entry is cleaned first
+        (from the map camera's "rooms" attribute).
+      required: true
+      example: "[16, 11, 12]"
+      selector:
+        object:
+
+clean_zone:
+  name: Clean zone
+  description: >-
+    Clean rectangle zones, like the official app's zone clean (xtl models).
+    Coordinates are map scene units on the 5 cm grid, in the same frame as
+    the room centres exposed by the map camera's "rooms" attribute.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    zones:
+      name: Zones
+      description: >-
+        One zone or a list of zones, each [x_min, y_min, x_max, y_max] in
+        scene units (x_max > x_min, y_max > y_min).
+      required: true
+      example: "[[320, 410, 420, 510]]"
+      selector:
+        object:
+    repeats:
+      name: Passes
+      description: >-
+        Cleaning passes for this task (the map card's ×N button; writes the
+        global pass count before the task starts). Omit to keep the current
+        count-select value.
+      required: false
+      example: 2
+      selector:
+        number:
+          min: 1
+          max: 2
+          step: 1
+
+set_room_info:
+  name: Set room info
+  description: >-
+    Rename and/or re-type a room (the official app's room editor, xtl
+    models). The field you omit keeps its current value from the map.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    room_id:
+      name: Room
+      description: Map room id (from the map camera's "rooms" attribute).
+      required: true
+      example: 11
+      selector:
+        number:
+          mode: box
+    name:
+      name: Name
+      description: New room name (max 32 bytes).
+      required: false
+      selector:
+        text:
+    category:
+      name: Room type
+      description: >-
+        Type code: 0 custom, 1 living room, 2 bathroom, 3 bedroom,
+        4 kitchen, 5 balcony, 6 dining room, 7 study, 8 gym, 9 hallway,
+        10 sunroom, 11 kids room, 13 lounge, 14 laundry, 15 entrance,
+        16/17 bedroom variants.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 17
+          mode: box
+
+set_dnd_time:
+  name: Set do not disturb time
+  description: >-
+    Program the Do-Not-Disturb window (xtl models), like the official app's
+    DND screen. This only stores the schedule — the "Do Not Disturb" switch
+    turns the window on. no_dust/no_dry skip the dock's dust collection and
+    mop drying during DND (firmware >= 439.681).
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    start_time:
+      name: Start time
+      description: Window start (24 h).
+      required: true
+      example: "22:00"
+      selector:
+        time:
+    end_time:
+      name: End time
+      description: Window end (24 h).
+      required: true
+      example: "08:00"
+      selector:
+        time:
+    no_dust:
+      name: Skip dust collection
+      description: Do not auto-empty the dust bin during the DND window.
+      required: false
+      default: false
+      selector:
+        boolean:
+    no_dry:
+      name: Skip mop drying
+      description: Do not auto-dry the mop during the DND window.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+install_voice_pack:
+  name: Install voice pack
+  description: >-
+    Install a voice pack through the official plugin's channel (xtl models):
+    the robot downloads the pack from the url itself, so the url must be
+    reachable from the robot's network (a LAN share on a PC works — e.g.
+    `python -m http.server`). Pack format: a PLAIN tar (not gzipped, despite
+    the vendor's .tar.gz names) holding media/music/<N>.ogg voice files and
+    media/music/audio.conf declaring the Language/Id. Built-in packs are
+    just CDN urls in that same format; a custom pack normally reuses the
+    LanguageType of the language it replaces. The call answers: the pack
+    is fetched and proven from Home Assistant first (md5, plain tar,
+    audio.conf), then the call waits up to 120 s (the official plugin's
+    own give-up) for the robot to report the new pack — the call succeeds
+    only on that report, any failure raises an error saying what the robot
+    reported. Give the pack a unique Ver in audio.conf so the install can
+    be told apart from the pack it replaces.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    url:
+      name: Pack url
+      description: HTTP(S) url of the pack tar the robot will download.
+      required: true
+      example: "http://192.168.1.10:8000/pack.tar"
+      selector:
+        text:
+    md5:
+      name: Checksum
+      description: The pack's md5 (32 hex chars) — the robot verifies it.
+      required: true
+      example: "76650eb08655d4019c1e3a37f9d2d723"
+      selector:
+        text:
+    version:
+      name: Expected pack version
+      description: >-
+        The Ver the robot must report (its audio.conf Ver) for the install
+        to count as confirmed. Read from the pack automatically when the
+        url is reachable from Home Assistant — only needed for shares Home
+        Assistant itself cannot reach.
+      required: false
+      selector:
+        text:
+    lang:
+      name: Language type
+      description: Language code the pack installs as (its audio.conf Id).
+      required: true
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - value: "1"
+              label: "1 — Chinese"
+            - value: "2"
+              label: "2 — English"
+            - value: "3"
+              label: "3 — Russian"
+            - value: "4"
+              label: "4 — German"
+            - value: "5"
+              label: "5 — Italian"
+            - value: "6"
+              label: "6 — French"
+            - value: "7"
+              label: "7 — Polish"
+            - value: "8"
+              label: "8 — Spanish"
+            - value: "9"
+              label: "9 — Korean"
+            - value: "10"
+              label: "10 — Chinese (TW)"
+            - value: "11"
+              label: "11 — Vietnamese"
+
+remote_control:
+  name: Remote control
+  description: >-
+    Manually drive the robot (xtl models), like the official app's manual
+    D-pad. The robot keeps the last command — it keeps moving or turning
+    until you send "Stop", so send Stop when you are done.
+  target:
+    entity:
+      domain: vacuum
+      integration: jonr_vac
+  fields:
+    command:
+      name: Command
+      description: Movement to start (0 = stop closes the manual session).
+      required: true
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - value: "0"
+              label: Stop
+            - value: "1"
+              label: Forward
+            - value: "2"
+              label: Turn left
+            - value: "3"
+              label: Turn right
+            - value: "4"
+              label: Backward

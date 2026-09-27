@@ -9,9 +9,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.xiaomi_vac import PLATFORMS, async_setup_entry
-from custom_components.xiaomi_vac import _async_start_mqtt
-from custom_components.xiaomi_vac.const import (
+from custom_components.jonr_vac import PLATFORMS, async_setup_entry
+from custom_components.jonr_vac import _async_start_mqtt
+from custom_components.jonr_vac.const import (
     CONF_DEVICE_ID,
     CONF_HOST,
     CONF_MODEL,
@@ -23,7 +23,7 @@ from custom_components.xiaomi_vac.const import (
     CONF_TOKEN,
     DOMAIN,
 )
-from custom_components.xiaomi_vac.device import DeviceCommunicationError, VacuumStatus
+from custom_components.jonr_vac.device import DeviceCommunicationError, VacuumStatus
 
 TOKEN = "0" * 32
 
@@ -58,7 +58,7 @@ _STATUS = VacuumStatus(
 
 
 def _fake_device(model: str = "dreame.vacuum.p2008"):
-    """Minimal mock IjaiVacuumDevice with a dreame-like core."""
+    """Minimal mock XtlVacuumDevice with a dreame-like core."""
     device = MagicMock()
     device.model = model
     device.status.return_value = _STATUS
@@ -90,9 +90,9 @@ async def test_setup_entry_success_forwards_all_platforms(hass: HomeAssistant) -
     mock_forward = AsyncMock(return_value=True)
 
     with (
-        patch("custom_components.xiaomi_vac.IjaiVacuumDevice", return_value=fake_device),
+        patch("custom_components.jonr_vac.XtlVacuumDevice", return_value=fake_device),
         patch(
-            "custom_components.xiaomi_vac.coordinator.XiaomiVacuumCoordinator"
+            "custom_components.jonr_vac.coordinator.JonrVacuumCoordinator"
             ".async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
@@ -125,9 +125,9 @@ async def test_setup_entry_comm_failure_raises_not_ready(hass: HomeAssistant) ->
             raise ConfigEntryNotReady from err
 
     with (
-        patch("custom_components.xiaomi_vac.IjaiVacuumDevice", return_value=fake_device),
+        patch("custom_components.jonr_vac.XtlVacuumDevice", return_value=fake_device),
         patch(
-            "custom_components.xiaomi_vac.coordinator.XiaomiVacuumCoordinator"
+            "custom_components.jonr_vac.coordinator.JonrVacuumCoordinator"
             ".async_config_entry_first_refresh",
             new=_first_refresh,
         ),
@@ -146,9 +146,9 @@ async def test_setup_entry_map_failure_does_not_block_control(hass: HomeAssistan
     fake_device = _fake_device()
 
     with (
-        patch("custom_components.xiaomi_vac.IjaiVacuumDevice", return_value=fake_device),
+        patch("custom_components.jonr_vac.XtlVacuumDevice", return_value=fake_device),
         patch(
-            "custom_components.xiaomi_vac.coordinator.XiaomiVacuumCoordinator"
+            "custom_components.jonr_vac.coordinator.JonrVacuumCoordinator"
             ".async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
@@ -160,7 +160,7 @@ async def test_setup_entry_map_failure_does_not_block_control(hass: HomeAssistan
         # Patch the internal data-fetch method so the coordinator's own
         # async_refresh catches UpdateFailed and swallows it (HA behaviour).
         patch(
-            "custom_components.xiaomi_vac.XiaomiMapCoordinator._async_update_data",
+            "custom_components.jonr_vac.JonrMapCoordinator._async_update_data",
             new=AsyncMock(side_effect=UpdateFailed("map unavailable")),
         ),
     ):
@@ -179,9 +179,9 @@ async def test_setup_entry_without_oauth_has_no_mqtt_client(hass: HomeAssistant)
     fake_device = _fake_device()
 
     with (
-        patch("custom_components.xiaomi_vac.IjaiVacuumDevice", return_value=fake_device),
+        patch("custom_components.jonr_vac.XtlVacuumDevice", return_value=fake_device),
         patch(
-            "custom_components.xiaomi_vac.coordinator.XiaomiVacuumCoordinator"
+            "custom_components.jonr_vac.coordinator.JonrVacuumCoordinator"
             ".async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
@@ -217,17 +217,17 @@ async def test_setup_entry_refreshes_oauth_before_mqtt_start(
     mqtt_instance.async_start = AsyncMock()
 
     with (
-        patch("custom_components.xiaomi_vac.IjaiVacuumDevice", return_value=fake_device),
+        patch("custom_components.jonr_vac.XtlVacuumDevice", return_value=fake_device),
         patch(
-            "custom_components.xiaomi_vac.coordinator.XiaomiVacuumCoordinator"
+            "custom_components.jonr_vac.coordinator.JonrVacuumCoordinator"
             ".async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
         patch(
-            "custom_components.xiaomi_vac.async_refresh_oauth_entry",
+            "custom_components.jonr_vac.async_refresh_oauth_entry",
             new=AsyncMock(return_value=False),
         ) as refresh,
-        patch("custom_components.xiaomi_vac.MiotMqttClient", return_value=mqtt_instance),
+        patch("custom_components.jonr_vac.MiotMqttClient", return_value=mqtt_instance),
         patch.object(
             hass.config_entries,
             "async_forward_entry_setups",
@@ -260,10 +260,10 @@ async def test_mqtt_token_provider_refreshes_before_returning_token(
 
     with (
         patch(
-            "custom_components.xiaomi_vac.async_refresh_oauth_entry",
+            "custom_components.jonr_vac.async_refresh_oauth_entry",
             new=AsyncMock(return_value=False),
         ) as refresh,
-        patch("custom_components.xiaomi_vac.MiotMqttClient", return_value=mqtt_instance) as cls,
+        patch("custom_components.jonr_vac.MiotMqttClient", return_value=mqtt_instance) as cls,
     ):
         await _async_start_mqtt(hass, entry, None, MagicMock())
 
