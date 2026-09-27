@@ -46,6 +46,34 @@ def test_error_attrs_carry_official_image(monkeypatch):
     assert "solution" in out  # every imaged code also has fix-it text
 
 
+def test_error_attrs_carry_human_label(monkeypatch):
+    """The push label mirrors the bubble: human text, not the slug.
+
+    Automations print `label` verbatim; a slug ("water_low") leaking into
+    the push is exactly the format the user rejected.
+    """
+    attrs_fn, profiles = _error_attrs_fn(monkeypatch, "station_error")
+    code = 4502  # water_low — station side, plugin label table
+
+    en = attrs_fn(SimpleNamespace(station_error_raw=code), "en")
+    fr = attrs_fn(SimpleNamespace(station_error_raw=code), "fr")
+
+    assert en["label"] == "Water low / clean tank missing"
+    assert fr["label"] != en["label"]           # language really applies
+    assert "_" not in en["label"]              # not the slug leaking through
+
+
+def test_error_attrs_label_falls_back_without_translation(monkeypatch):
+    """A code the translation table lacks still gets a readable label."""
+    attrs_fn, profiles = _error_attrs_fn(monkeypatch, "robot_error")
+    unmapped = max(profiles.XTL_ERROR_CODE_KEYS) + 99999
+
+    out = attrs_fn(SimpleNamespace(fault=unmapped), "en")
+
+    # Unknown code -> synthetic slug error_<n> -> humanized, never raw.
+    assert out["label"] == f"Error {unmapped}"
+
+
 def test_error_attrs_none_while_healthy(monkeypatch):
     """No attributes at all while the robot reports no fault."""
     attrs_fn, _ = _error_attrs_fn(monkeypatch, "station_error")

@@ -20,6 +20,7 @@ from . import JonrConfigEntry
 from .const import DOMAIN
 from .coordinator import JonrVacuumCoordinator
 from .device import VacuumStatus
+from .error_events import _labels
 from .spec.profiles.xtl import (
     XTL_ERROR_CODE_KEYS,
     XTL_ERROR_IMAGES,
@@ -112,15 +113,21 @@ def _has_xtl_prop(attr: str) -> Callable[[ModelProfile], bool]:
 
 def _error_attrs(code_fn: Callable[[VacuumStatus], int | None],
                  keys: dict) -> Callable[[VacuumStatus, str], dict | None]:
-    """attrs_lang_fn builder for the ENUM error sensors: code + the plugin's
-    fix-it text (EN/FR picked by language) + the official fault picture file.
-    None at 0 so the entity carries no stale attributes while healthy."""
+    """attrs_lang_fn builder for the ENUM error sensors: code + the human
+    label + the plugin's fix-it text (all EN/FR picked by language) + the
+    official fault picture file. None at 0 so the entity carries no stale
+    attributes while healthy."""
     def attrs(status: VacuumStatus, lang: str) -> dict | None:
         code = code_fn(status)
         if not code:
             return None
         sol = xtl_error_solutions(lang).get(code, "")
-        out = {"code": code}
+        # Same table the bubble in error_events renders (translations/*.json
+        # robot_error states) — pushes use it instead of the raw slug so a
+        # phone reads "Réservoir d'eau propre faible", not "water_low".
+        slug = keys.get(code) or f"error_{code}"
+        label = _labels(lang).get(code, slug.replace("_", " ").capitalize())
+        out = {"code": code, "label": label}
         if sol:
             out["solution"] = sol
         # File name only; automations build the absolute URL from it (the

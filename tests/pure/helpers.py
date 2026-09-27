@@ -184,7 +184,18 @@ def load_sensor_module(monkeypatch: pytest.MonkeyPatch):
     # The relative `. import JonrConfigEntry` resolves via the package __init__
     pkg.JonrConfigEntry = object  # type: ignore[attr-defined]
 
-    const_stub = _make("jonr_vac.const", DOMAIN="jonr_vac")
+    # The sensor's label table reaches const through error_events (shared
+    # label tables); the real const has no HA imports, so mirror every name
+    # that chain reads instead of only DOMAIN.
+    const_stub = _make(
+        "jonr_vac.const",
+        DOMAIN="jonr_vac",
+        EVENT_ERROR="jonr_vac_error",
+        EVENT_STATION_ERROR="jonr_vac_station_error",
+        OPT_ERROR_NOTIFICATIONS="error_notifications",
+        CARD_STATIC_BASE="/jonr-vac-card",
+        FAULT_IMAGE_URL="/jonr-vac-card/images/faults",
+    )
     monkeypatch.setitem(sys.modules, "jonr_vac.const", const_stub)
 
     coordinator_stub = _make(
