@@ -89,7 +89,7 @@ const parseRGBA = (s) => {
 // Tray icons use HA's bundled MDI set via <ha-icon> so they render identically
 // to native cards (the old hand-rolled SVGs were janky and inconsistent).
 const MDI = {
-  play: "mdi:play", pause: "mdi:pause", dock: "mdi:home-map-marker",
+  play: "mdi:play", pause: "mdi:pause", dock: "mdi:home-import-outline",
   locate: "mdi:map-marker-radius", fan: "mdi:fan", water: "mdi:water", map: "mdi:layers",
   tools: "mdi:tools",
 };
@@ -166,7 +166,7 @@ class XiaomiVacCard extends HTMLElement {
   _relevantChanged(a, b) {
     const eids = [
       this._config.vacuum,
-      `sensor.${this._base()}_battery`,
+      this._batteryEid(),
       this._config.water || `select.${this._base()}_water_level`,
       this._config.fan || `select.${this._base()}_fan_speed`,
       this._activeMapEid(),
@@ -191,6 +191,26 @@ class XiaomiVacCard extends HTMLElement {
       if (found) { this._cachedMapEid = found; return found; }
     }
     return `select.${this._base()}_active_map`;   // fallback if registry lookup misses
+  }
+  // Battery via the same registry lookup as the consumables, NOT a guessed
+  // entity_id: the integration names it after the HA translation ("Batterie"
+  // on a French install -> sensor.<base>_batterie), and the vacuum can be
+  // renamed/area-prefixed on top — a hardcoded `sensor.${base}_battery`
+  // silently misses and the gauge stays blank. Falls back to the guess so a
+  // registry-less setup still finds the English-default id.
+  _batteryEid() {
+    if (this._cachedBattEid && this._st(this._cachedBattEid)) return this._cachedBattEid;
+    const ents = this._hass && this._hass.entities;
+    const vacEnt = ents && ents[this._config.vacuum];
+    const deviceId = vacEnt && vacEnt.device_id;
+    if (ents && deviceId) {
+      const found = Object.keys(ents).find((eid) =>
+        eid.startsWith("sensor.") &&
+        ents[eid].device_id === deviceId &&
+        ents[eid].translation_key === "battery");
+      if (found) { this._cachedBattEid = found; return found; }
+    }
+    return `sensor.${this._base()}_battery`;
   }
   // Same registry-lookup pattern as _activeMapEid(): the consumable sensors'
   // entity_id can carry an area-name prefix HA auto-generates on first setup
@@ -823,7 +843,7 @@ class XiaomiVacCard extends HTMLElement {
     const state = this._effState(vac);
     this._root.style.setProperty("--xv-accent", ACCENT[state] || ACCENT.unknown);
 
-    const battEnt = this._st(`sensor.${this._base()}_battery`);
+    const battEnt = this._st(this._batteryEid());
     const batt = battEnt ? Number(battEnt.state) : (vac && vac.attributes.battery_level);
     const hasBatt = batt != null && !Number.isNaN(batt);
     // No charging flag from the device — docked-and-not-full is the charging tell.
