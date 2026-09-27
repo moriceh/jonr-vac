@@ -81,6 +81,13 @@ automation:
         event_type: jonr_vac_error
       - trigger: event
         event_type: jonr_vac_station_error
+    vars:
+      sensor_id: >-
+        {{ 'sensor.YOUR_STATION_ERROR_SENSOR'
+           if trigger.event.event_type == 'jonr_vac_station_error'
+           else 'sensor.YOUR_ROBOT_ERROR_SENSOR' }}
+      solution: "{{ state_attr(sensor_id, 'solution') or '' }}"
+      image: "{{ state_attr(sensor_id, 'image') or '' }}"
     action:
       - action: notify.mobile_app_YOUR_PHONE
         data:
@@ -88,7 +95,26 @@ automation:
           message: >-
             {{ trigger.event.data.error | replace('_', ' ') }}
             (code {{ trigger.event.data.code }})
+            {% if solution %}{{ '\n' }}{{ solution }}{% endif %}
+          data:
+            tag: "jonr_{{ trigger.event.data.code }}"
+            ttl: 0
+            # The sensors' image attribute carries the official fault picture
+            # file name (see Error images above). The companion app wants a
+            # URL it can fetch; the relative path below resolves against the
+            # HA instance that sent the notification (local or remote UI),
+            # which is also why the sensors publish a file name rather than a
+            # baked-in host. Empty string = no picture on codes the plugin
+            # has no drawing for.
+            image: >-
+              {{ '/jonr-vac-card/images/faults/' ~ image if image else '' }}
 ```
+
+A stable `tag` plus `ttl: 0` makes a repeated error replace its own
+notification instead of stacking. Reading the fault text, fix-it line and
+picture from the sensors' attributes (`code`, `solution`, `image`) rather
+than the event payload keeps the push in step with the bubble: same tables,
+same languages, one source of truth.
 
 The bubble label tables and this payload come from the same translation
 keys, so the automation and the UI never disagree — see
