@@ -26,7 +26,12 @@ _LOGGER = logging.getLogger(__name__)
 # `room_chains`, geometry, carpets, and segmented travelled paths. A v2 entry
 # holds the old vector, and `async_upsert` is a no-op while the blob's
 # content_hash is unchanged -- so without this bump stale data survives upgrade.
-STORAGE_VERSION = 3
+# v4 (xtl card contract): xtl vectors now carry the embedded card's rich
+# contract (rooms list, room_chains, metre bounds, overlays); a v3 xtl entry
+# holds the thin {map_id, width, height} vector, which pins the card's map
+# page to zero rooms while the blob hash keeps upserts no-ops. Same trap as
+# v3, same purpose-built eviction.
+STORAGE_VERSION = 4
 # HA's own Store file-format version, deliberately pinned. Raising it would make
 # Store.async_load hit its migration path and raise NotImplementedError, which
 # `async_load` can only report as "cache unreadable"; the payload check below is
