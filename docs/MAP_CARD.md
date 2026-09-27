@@ -28,10 +28,42 @@ see [Installation](INSTALLATION.md)).
 GET /api/jonr_vac/map/<entry_id>
 ```
 
-The latest vector map JSON: room polygons, walls, the cleaning path, dock
-position. `<entry_id>` is the config-entry id (the card resolves it from the
-vacuum entity; the map camera's attributes carry `rooms` and calibration for
-manual setups).
+The latest vector map JSON. `<entry_id>` is the config-entry id (the card
+resolves it from the vacuum entity; the map camera's attributes carry
+`rooms` and calibration for manual setups).
+
+### The vector contract
+
+The map page of the bundled card is driven entirely by the `vector` of the
+active map entry — it builds one page per entry carrying a non-empty
+`rooms` **list**, and draws rooms from traced contours rather than
+bounding boxes when they are available. The xtl renderer feeds every part
+of that contract from the same decoded blob that produces the camera PNG
+(the two never drift, and `content_hash` stays exactly `sha256(blob)`):
+
+| vector key | content | frame |
+|---|---|---|
+| `map_id` | Mi Home map head id | — |
+| `size` / `grid_rle` | raster cell values (`[value, run]` pairs, row 0 = south), only when every room label falls in the card's paint band | grid cells |
+| `bounds` / `resolution` | crop origin (half-cell corner anchors) and cell size (0.05 m) | metres |
+| `rooms` | `{id, name, cx, cy, bbox}` per room with traced geometry; `id` is the room id the [services](SERVICES.md) consume | metres |
+| `room_chains` | exact cell-corner contours per room (list of rings) — the card fills these; the `bbox` rectangle is the fallback | grid-corner coords |
+| `charger` / `vacuum` | dock and robot dots; `vacuum` mirrors the PNG glyph (docked poses parked, relocation omits the dot for the badge) | metres |
+| `path_segments` | the cleaning route polylines, break-split like the PNG trace | metres |
+| `walls` / `carpets` | dashed virtual walls, carpet zones | metres |
+
+Room raster cells only ship when every room label lies inside the card's
+10–59 paint band (JONR room ids are 3–6, so JONR maps take the
+chains-only path — the traced contours carry the tint, and the `size` /
+`grid_rle` keys stay absent, which is exactly how the card decides to
+skip the raster layer). Room centres land on the same pixel the PNG drew:
+the card's grid-corner law and the renderer's scene→pixel transform are
+algebraically pinned against each other by the test suite, including the
+robot's transposed area-centre frame.
+
+Live keys (`vacuum`, `path_segments`, …) are stripped from inactive
+entries served under `.maps`, so a stale robot never ghosts onto the wrong
+floor plan.
 
 ## The map camera
 
