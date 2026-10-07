@@ -9,10 +9,9 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/moriceh/jonr-vac/issues",
   "requirements": [
-    "python-miio==0.5.12",
+    "python-miio>=0.5.12",
     "pycryptodome==3.23.0",
-    "Pillow>=12.2.0",
-    "paho-mqtt==2.1.0"
+    "paho-mqtt>=2.1.0"
   ],
   "version": "0.1.0"
 }

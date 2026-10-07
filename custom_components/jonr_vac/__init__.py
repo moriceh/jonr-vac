@@ -12,7 +12,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.helpers.typing import ConfigType
 
 from .cloud.mqtt import MiotMqttClient, MqttMessage
@@ -36,6 +36,10 @@ from .map_coordinator import JonrMapCoordinator
 from .spec.profiles.xtl import xtl_dnd_from_push
 
 _LOGGER = logging.getLogger(__name__)
+
+# Config-entry-only: async_setup exists solely to serve the Lovelace card and
+# the map view, so hassfest wants the config-entry-only schema declared.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS: list[Platform] = [
     Platform.VACUUM,
