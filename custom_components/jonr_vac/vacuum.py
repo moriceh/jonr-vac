@@ -11,6 +11,10 @@ from homeassistant.components.vacuum import (
     VacuumActivity,
     VacuumEntityFeature,
 )
+try:  # HA >= 2026.3 (native "clean area" support)
+    from homeassistant.components.vacuum import Segment
+except ImportError:  # older HA: native clean-by-area is simply not offered
+    Segment = None
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -173,6 +177,10 @@ class JonrVacuum(CoordinatorEntity[JonrVacuumCoordinator], StateVacuumEntity):
             support |= VacuumEntityFeature.RETURN_HOME
         if core.locate is not None or core.alarm is not None:
             support |= VacuumEntityFeature.LOCATE
+        # Native HA "clean by area": only when a cloud map session exists
+        # (the room table comes from the map) and this HA knows Segment.
+        if Segment is not None and getattr(entry.runtime_data, "map", None) is not None:
+            support |= VacuumEntityFeature.CLEAN_AREA
         self._attr_supported_features = support
         base = entry.unique_id or entry.entry_id
         self._attr_unique_id = f"{base}_vacuum"
@@ -244,6 +252,31 @@ class JonrVacuum(CoordinatorEntity[JonrVacuumCoordinator], StateVacuumEntity):
         preset = next((k for k, v in counts.items() if v == repeats), None)
         if preset is not None:
             self._device.set_count(preset)
+
+    async def async_get_segments(self) -> list:
+        """Rooms of the active map for HA's area mapping (id = map room id)."""
+        map_coord = self._entry.runtime_data.map
+        result = getattr(map_coord, "data", None) if map_coord is not None else None
+        rooms = (getattr(result, "attributes", None) or {}).get("rooms") or {}
+        # Segment id = map room id (what the clean command takes, area id + 2).
+        # Rooms left on their default name carry an empty name in the map
+        # JSON; Mi Home numbers those by the AREA id (1, 2, ...), not by the
+        # +2 room id, so label them the same way.
+        segments = []
+        for rid, r in rooms.items():
+            if not isinstance(r, dict):
+                continue
+            area_id = r.get("id")
+            default = f"Room {area_id}" if area_id is not None else f"Room {rid}"
+            segments.append((
+                area_id if isinstance(area_id, int) else int(rid),
+                Segment(id=str(rid), name=str(r.get("name") or default)),
+            ))
+        return [seg for _, seg in sorted(segments, key=lambda t: t[0])]
+
+    async def async_clean_segments(self, segment_ids: list[str], **kwargs) -> None:
+        """Called by vacuum.clean_area after HA areas -> segment ids."""
+        await self.async_clean_segment([int(s) for s in segment_ids])
 
     async def async_clean_segment(self, segments: list[int],
                                   repeats: int | None = None) -> None:
