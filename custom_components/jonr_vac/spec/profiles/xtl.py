@@ -1283,9 +1283,39 @@ XTL_ERROR_SOLUTIONS_VI = {
 }
 
 
+XTL_ERROR_SOLUTIONS_SK = {
+    4001: "Otvorte kryt robota a vložte nádobu na prach.",
+    4003: "Zložte kryt hlavnej kefy, vyberte hlavnú kefu a odstráňte zamotané vlasy a iné nečistoty.",
+    4004: "Zložte bočnú kefu a odstráňte zamotané vlasy a iné nečistoty.",
+    4005: "Otočte hnacím kolesom a odstráňte zamotané vlasy alebo nečistoty, ktoré ho blokujú.",
+    4006: "Utrite senzor pádu suchou handričkou a položte robota na bezpečné miesto, aby ste ho mohli znova spustiť.",
+    4007: "Odstráňte predmety, ktoré zakrývajú laserový senzor.",
+    4008: "Odstráňte nečistoty, ktoré blokujú otočný radar laserového senzora, a jemne poklepte na kryt senzora.",
+    4009: "Utrite hnacie koleso a položte robota na iné miesto, aby ste ho mohli znova spustiť.",
+    4011: "Odstráňte predmety, ktoré blokujú kryt laserového senzora, alebo položte robota na iné miesto a spustite ho znova.",
+    4012: "Odstráňte prekážky okolo robota alebo ho premiestnite do novej oblasti a spustite ho znova.",
+    4013: "Jemne poklepte na predný nárazník robota a skontrolujte, či sa nárazník vracia späť.",
+    4014: "Položte robota späť na zem a spustite ho znova.",
+    4016: "Položte robota na rovný povrch a spustite ho znova.",
+    4017: "Premiestnite robota mimo zakázanej zóny a spustite ho znova, alebo odstráňte aktuálnu zakázanú zónu.",
+    4018: "Premiestnite robota mimo koberca a spustite ho znova, alebo upravte aktuálnu stratégiu čistenia kobercov.",
+    4020: "Zložte držiak mopovacej podložky a odstráňte zamotané vlasy a iné nečistoty.",
+    4021: "Správne nainštalujte oba držiaky mopovacích podložiek.",
+    4501: "Správne nainštalujte vrecko na prach.",
+    4502: "Vyberte nádrž na čistú vodu, dolejte primerané množstvo vody, nádrž znova nainštalujte a uistite sa, že je správne nasadená.",
+    4503: "Vyberte nádrž na odpadovú vodu, vylejte všetku odpadovú vodu, nádrž znova nainštalujte a uistite sa, že je správne nasadená.",
+    4506: "1. Vyberte filter z priestoru na umývanie mopu, očistite z neho nahromadené vlasy a špinu a znova ho nainštalujte; 2. Skontrolujte, či nič neblokuje nasávací otvor priestoru na umývanie mopu; 3. Uistite sa, že kryt nádrže na odpadovú vodu je pevne zatvorený; 4. Skontrolujte, či je nádrž na odpadovú vodu správne nainštalovaná.",
+    4507: "1. Vyberte filter z priestoru na umývanie mopu, očistite z neho nahromadené vlasy a špinu a znova ho nainštalujte; 2. Skontrolujte, či nič neblokuje nasávací otvor priestoru na umývanie mopu; 3. Vyberte filter nádrže na odpadovú vodu zo súpravy na automatické dopĺňanie a vypúšťanie vody, dôkladne ho očistite a znova nainštalujte; 4. Skontrolujte, či je kryt modulu automatického prívodu a odvodu vody pevne zatvorený.",
+    4901: "1. Skontrolujte tlak vody v domácnosti; 2. Skontrolujte, či je prívodná hadica vody správne nainštalovaná.",
+    4902: "1. Skontrolujte, či je odtoková hadica správne nainštalovaná; 2. Otvorte kryt nádrže na odpadovú vodu, vyberte filter, očistite ho a znova nainštalujte.",
+    4903: "Doplňte primerané množstvo čistiaceho roztoku do súpravy na automatické dopĺňanie a vypúšťanie vody.",
+}
+
+
 XTL_ERROR_SOLUTIONS = {
     "en": XTL_ERROR_SOLUTIONS_EN,
     "fr": XTL_ERROR_SOLUTIONS_FR,
+    "sk": XTL_ERROR_SOLUTIONS_SK,
     "de": XTL_ERROR_SOLUTIONS_DE,
     "es": XTL_ERROR_SOLUTIONS_ES,
     "it": XTL_ERROR_SOLUTIONS_IT,
@@ -1300,8 +1330,9 @@ XTL_ERROR_SOLUTIONS = {
 
 def _solution_bucket(language) -> str:
     """HA language tag -> XTL_ERROR_SOLUTIONS key. The plugin's own locale
-    set is en/zh-CN/zh-TW/ko/ru/es/fr/it/de/pl/vi; anything outside it
-    (ja, nl, pt, pt-BR, …) falls back to English like the plugin itself.
+    set is en/zh-CN/zh-TW/ko/ru/es/fr/it/de/pl/vi, plus our own hand-written
+    Slovak (sk); anything outside it (ja, nl, pt, pt-BR, …) falls back to
+    English like the plugin itself.
     zh-Hant/zh-HK/zh-TW take Traditional, any other zh takes Simplified."""
     tag = str(language or "").strip().lower().replace("_", "-")
     if tag in ("zh-hant", "zh-hk", "zh-mo", "zh-tw"):
@@ -1315,8 +1346,8 @@ def _solution_bucket(language) -> str:
 
 
 def xtl_error_solutions(language) -> dict:
-    """Error fix-it texts for an HA language (the plugin's 11 locales;
-    everything else English)."""
+    """Error fix-it texts for an HA language (the plugin's 11 locales plus
+    Slovak; everything else English)."""
     return XTL_ERROR_SOLUTIONS[_solution_bucket(language)]
 
 

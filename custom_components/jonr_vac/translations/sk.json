@@ -1,0 +1,667 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pridať vysávač JONR",
+        "description": "Prihláste sa e-mailom a získate živú mapu.",
+        "menu_options": {
+          "credentials": "E-mail a heslo (získate živú mapu)",
+          "local": "IP adresa zariadenia a token (iba ovládanie, bez mapy)"
+        }
+      },
+      "credentials": {
+        "title": "Prihlásenie do Mi Home",
+        "description": "Prihláste sa raz. Potom zostanete prihlásení.",
+        "data": {
+          "username": "E-mail, telefónne číslo alebo ID účtu Mi",
+          "password": "Heslo"
+        }
+      },
+      "local": {
+        "title": "Lokálne pripojenie",
+        "description": "IP adresa a 32-znakový token. Ovládanie a senzory, bez mapy.",
+        "data": {
+          "host": "IP adresa",
+          "token": "Token"
+        }
+      },
+      "captcha": {
+        "title": "Rýchle overenie, že ste človek",
+        "description": "Xiaomi sa potrebuje uistiť, že ste skutočný človek. Prepíšte nižšie uvedené znaky:\n\n![captcha]({captcha_url})",
+        "data": {
+          "code": "Znaky z obrázka"
+        }
+      },
+      "twofa": {
+        "title": "Zadajte kód",
+        "description": "Xiaomi vám práve poslala kód e-mailom. Zadajte ho nižšie.",
+        "data": {
+          "code": "Overovací kód"
+        }
+      },
+      "devices": {
+        "title": "Vyberte vysávač",
+        "description": "Na tomto účte je viac ako jeden vysávač. Vyberte ten, ktorý chcete pridať.",
+        "data": {
+          "device": "Vysávač"
+        }
+      },
+      "miot_oauth": {
+        "title": "Povoliť overenie pre mapu v reálnom čase",
+        "description": "Voliteľné. Pripraví cestu pre živú mapu cez MQTT. Ak ho preskočíte, mapa sa bude ďalej načítavať periodicky ako doteraz.",
+        "data": {
+          "enable_miot_oauth": "Povoliť OAuth pre aktualizácie mapy v reálnom čase"
+        }
+      },
+      "miot_oauth_auth": {
+        "title": "Prepojiť Xiaomi OAuth",
+        "description": "Otvorte odkaz Xiaomi OAuth. Home Assistant bude automaticky pokračovať, keď vás Xiaomi presmeruje späť.",
+        "data": {}
+      },
+      "miot_oauth_code": {
+        "title": "Vložte kód Xiaomi OAuth",
+        "description": "Automatické presmerovanie sa nedokončilo. Otvorte tento odkaz, schváľte prístup a potom vložte kód z adresného riadka po presmerovaní (za 'CODE=' a pred '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Kód OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth je prepojený",
+        "description": "Overenie pre mapu v reálnom čase je pripravené."
+      },
+      "reauth_confirm": {
+        "title": "Znova sa prihláste do Xiaomi",
+        "description": "Vaša relácia s cloudovou mapou Xiaomi vypršala a nepodarilo sa ju automaticky obnoviť. Prihláste sa znova, aby sa mapa vrátila.",
+        "data": {
+          "username": "E-mail, telefónne číslo alebo ID účtu Mi",
+          "password": "Heslo"
+        }
+      }
+    },
+    "error": {
+      "unsupported_model": "Tento model zatiaľ nie je podporovaný.",
+      "cannot_connect": "S vysávačom sa nepodarilo spojiť na tejto IP adrese s týmto tokenom.",
+      "oauth_failed": "Xiaomi OAuth zlyhal. Skúste odkaz znova alebo vložte kód ručne.",
+      "oauth_region_failed": "Z tohto kódu sa nepodarilo určiť región Xiaomi OAuth."
+    },
+    "progress": {
+      "miot_oauth_auth": "Otvorte [Xiaomi OAuth]({authorize_url}) na novej karte. Po schválení by sa mal Xiaomi vrátiť do Home Assistantu a tento krok bude automaticky pokračovať."
+    },
+    "abort": {
+      "already_configured": "Tento vysávač je už nastavený.",
+      "reauth_successful": "Ste späť. Živá mapa je obnovená.",
+      "login_failed": "Prihlásenie do cloudu Xiaomi zlyhalo ({reason}). Skontrolujte e-mail a heslo a skúste to znova.",
+      "login_verification_required": "Xiaomi toto prihlásenie zablokovalo a vyžaduje overenie účtu. Prihláste sa na account.xiaomi.com (alebo v aplikácii Xiaomi Home), dokončite požadované overenie a skúste to znova.",
+      "no_devices": "Na tomto účte nie sú žiadne podporované vysávače.",
+      "unsupported_model": "Tento model zatiaľ nie je podporovaný (iba JONR xtl.vacuum.xm2216)."
+    }
+  },
+  "options": {
+    "step": {
+      "miot_oauth_auth": {
+        "title": "Prepojiť Xiaomi OAuth",
+        "description": "Otvorte odkaz Xiaomi OAuth. Home Assistant bude automaticky pokračovať, keď vás Xiaomi presmeruje späť.",
+        "data": {}
+      },
+      "miot_oauth_code": {
+        "title": "Vložte kód Xiaomi OAuth",
+        "description": "Automatické presmerovanie sa nedokončilo. Otvorte tento odkaz, schváľte prístup a potom vložte kód z adresného riadka po presmerovaní (za 'CODE=' a pred '&'):\n\n{authorize_url}",
+        "data": {
+          "code": "Kód OAuth"
+        }
+      },
+      "miot_oauth_finish": {
+        "title": "Xiaomi OAuth je prepojený",
+        "description": "Overenie pre mapu v reálnom čase je pripravené."
+      },
+      "init": {
+        "title": "Možnosti vysávača JONR",
+        "data": {
+          "error_notifications": "Upozornenia, keď robot alebo stanica nahlásia chybu"
+        },
+        "data_description": {
+          "error_notifications": "Trvalé upozornenia Home Assistantu, navyše k vždy odosielaným udalostiam zbernice jonr_vac_error / jonr_vac_station_error."
+        }
+      }
+    },
+    "error": {
+      "oauth_failed": "Xiaomi OAuth zlyhal. Skúste odkaz znova alebo vložte kód ručne.",
+      "oauth_region_failed": "Z tohto kódu sa nepodarilo určiť región Xiaomi OAuth."
+    },
+    "progress": {
+      "miot_oauth_auth": "Otvorte [Xiaomi OAuth]({authorize_url}) na novej karte. Po schválení by sa mal Xiaomi vrátiť do Home Assistantu a tento krok bude automaticky pokračovať."
+    },
+    "abort": {
+      "oauth_local_only": "Tento vysávač bol pridaný iba ako lokálny, takže nemá reláciu v cloude Xiaomi, ku ktorej by sa dal OAuth prepojiť."
+    }
+  },
+  "issues": {
+    "oauth_missing": {
+      "title": "Zapnite živú mapu v reálnom čase",
+      "fix_flow": {
+        "step": {
+          "link": {
+            "title": "Prepojiť Xiaomi OAuth",
+            "description": "Váš vysávač funguje, ale mapa sa obnovuje pomaly. Prepojte Xiaomi OAuth a získate živú mapu v reálnom čase (MQTT). Otvorte tento odkaz, schváľte prístup a potom vložte kód z adresného riadka po presmerovaní (za 'CODE=' a pred '&'):\n\n{authorize_url}",
+            "data": {
+              "code": "Kód OAuth"
+            }
+          }
+        },
+        "error": {
+          "oauth_failed": "Xiaomi OAuth zlyhal. Spustite prepojenie znova a vložte nový kód.",
+          "oauth_region_failed": "Z tohto kódu sa nepodarilo určiť región Xiaomi OAuth."
+        },
+        "abort": {
+          "entry_gone": "Tento vysávač už nie je nastavený."
+        }
+      }
+    }
+  },
+  "entity": {
+    "camera": {
+      "map": {
+        "name": "Mapa"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stav",
+        "state": {
+          "cleaning": "Čistenie",
+          "paused": "Pozastavené",
+          "idle": "Nečinný",
+          "returning": "Návrat na stanicu",
+          "docked": "Na stanici",
+          "error": "Chyba",
+          "localizing": "Lokalizácia…"
+        }
+      },
+      "battery": {
+        "name": "Batéria"
+      },
+      "main_brush_life": {
+        "name": "Životnosť hlavnej kefy"
+      },
+      "side_brush_life": {
+        "name": "Životnosť bočnej kefy"
+      },
+      "filter_life": {
+        "name": "Životnosť filtra"
+      },
+      "mop_life": {
+        "name": "Životnosť mopu"
+      },
+      "dust_bag_life": {
+        "name": "Životnosť vrecka na prach"
+      },
+      "detergent_life": {
+        "name": "Životnosť čistiaceho prostriedku"
+      },
+      "mop_trough_life": {
+        "name": "Životnosť vaničky na umývanie mopu"
+      },
+      "unit_sensor_life": {
+        "name": "Životnosť senzorov robota"
+      },
+      "session_clean_time": {
+        "name": "Čas aktuálneho čistenia"
+      },
+      "session_clean_area": {
+        "name": "Plocha aktuálneho čistenia"
+      },
+      "total_clean_time": {
+        "name": "Celkový čas čistenia"
+      },
+      "total_clean_area": {
+        "name": "Celková plocha čistenia"
+      },
+      "total_clean_count": {
+        "name": "Celkový počet čistení"
+      },
+      "clean_timers": {
+        "name": "Plány čistenia"
+      },
+      "clean_water_tank": {
+        "name": "Nádrž na čistú vodu",
+        "state": {
+          "normal": "V poriadku",
+          "uninstalled": "Nenainštalovaná",
+          "unusable": "Nepoužiteľná",
+          "fluid_low": "Nízka hladina vody"
+        }
+      },
+      "drain_water_tank": {
+        "name": "Nádrž na odpadovú vodu",
+        "state": {
+          "normal": "V poriadku",
+          "uninstalled": "Nenainštalovaná",
+          "unusable": "Nepoužiteľná"
+        }
+      },
+      "dust_bag_state": {
+        "name": "Vrecko na prach",
+        "state": {
+          "normal": "Nainštalované",
+          "uninstalled": "Nenainštalované"
+        }
+      },
+      "mop_tank_state": {
+        "name": "Nádrž na umývanie mopu",
+        "state": {
+          "normal": "Nainštalovaná",
+          "uninstalled": "Nenainštalovaná"
+        }
+      },
+      "robot_error": {
+        "name": "Chyba robota",
+        "state": {
+          "none": "Žiadna chyba",
+          "dust_box_missing": "Nádoba na prach nie je nainštalovaná",
+          "roller_brush_entangled": "Hlavná kefa je zamotaná",
+          "side_brush_entangled": "Bočná kefa je zamotaná",
+          "drive_wheel_blocked": "Hnacie koleso je zablokované",
+          "drop_sensor_dirty": "Senzor pádu je znečistený",
+          "laser_obstructed": "Laserový senzor je zakrytý",
+          "laser_radar_blocked": "Laserový radar je zablokovaný",
+          "drive_wheel_slipping": "Hnacie koleso preklzuje",
+          "laser_cover_jammed": "Kryt laserového senzora sa zasekol",
+          "robot_stuck": "Robot uviazol",
+          "collision_sensor_jammed": "Senzor nárazu sa zasekol",
+          "robot_suspended": "Robot je zdvihnutý zo zeme",
+          "robot_tilted": "Robot je naklonený",
+          "restricted_zone_start": "Štart v zakázanej zóne",
+          "carpet_start": "Štart na koberci",
+          "mop_holder_entangled": "Držiak mopu je zamotaný",
+          "mop_holder_missing": "Držiak mopu nie je nainštalovaný",
+          "dust_bag_missing": "Vrecko na prach nie je nainštalované",
+          "water_low": "Nízka hladina vody / chýba nádrž na čistú vodu",
+          "dirty_water_full": "Plná nádrž na odpadovú vodu / chýba nádrž",
+          "mop_slot_full": "Plný priestor na umývanie mopu",
+          "mop_slot_full_refill_kit": "Plný priestor na umývanie mopu (súprava na dopĺňanie)",
+          "refill_failed": "Automatické dopĺňanie zlyhalo",
+          "drain_failed": "Automatické vypúšťanie zlyhalo",
+          "solution_low": "Nízka hladina čistiaceho roztoku"
+        }
+      },
+      "station_error": {
+        "name": "Chyba stanice",
+        "state": {
+          "none": "Žiadna chyba",
+          "dust_box_missing": "Nádoba na prach nie je nainštalovaná",
+          "roller_brush_entangled": "Hlavná kefa je zamotaná",
+          "side_brush_entangled": "Bočná kefa je zamotaná",
+          "drive_wheel_blocked": "Hnacie koleso je zablokované",
+          "drop_sensor_dirty": "Senzor pádu je znečistený",
+          "laser_obstructed": "Laserový senzor je zakrytý",
+          "laser_radar_blocked": "Laserový radar je zablokovaný",
+          "drive_wheel_slipping": "Hnacie koleso preklzuje",
+          "laser_cover_jammed": "Kryt laserového senzora sa zasekol",
+          "robot_stuck": "Robot uviazol",
+          "collision_sensor_jammed": "Senzor nárazu sa zasekol",
+          "robot_suspended": "Robot je zdvihnutý zo zeme",
+          "robot_tilted": "Robot je naklonený",
+          "restricted_zone_start": "Štart v zakázanej zóne",
+          "carpet_start": "Štart na koberci",
+          "mop_holder_entangled": "Držiak mopu je zamotaný",
+          "mop_holder_missing": "Držiak mopu nie je nainštalovaný",
+          "dust_bag_missing": "Vrecko na prach nie je nainštalované",
+          "water_low": "Nízka hladina vody / chýba nádrž na čistú vodu",
+          "dirty_water_full": "Plná nádrž na odpadovú vodu / chýba nádrž",
+          "mop_slot_full": "Plný priestor na umývanie mopu",
+          "mop_slot_full_refill_kit": "Plný priestor na umývanie mopu (súprava na dopĺňanie)",
+          "refill_failed": "Automatické dopĺňanie zlyhalo",
+          "drain_failed": "Automatické vypúšťanie zlyhalo",
+          "solution_low": "Nízka hladina čistiaceho roztoku"
+        }
+      },
+      "robot_message": {
+        "name": "Správa robota",
+        "state": {
+          "none": "Žiadna",
+          "charge_complete_resume": "Nabíjanie dokončené, pokračujem",
+          "low_battery_return": "Slabá batéria, vraciam sa na stanicu",
+          "upgrade_failed": "Aktualizácia zlyhala",
+          "upgrade_success": "Aktualizácia bola úspešná",
+          "upgrade_available": "Dostupná aktualizácia",
+          "battery_low_shutdown": "Slabá batéria, vypínam sa",
+          "shutdown_soon": "Čoskoro sa vypne, vráťte robota na stanicu",
+          "cleaning_done_returning": "Čistenie dokončené, vraciam sa",
+          "clean_dirty_water_tank": "Vyprázdnite nádrž na odpadovú vodu",
+          "schedule_started": "Spustené plánované čistenie",
+          "schedule_conflict": "Plán preskočený (konflikt)",
+          "schedule_skipped_dnd": "Plán preskočený (Nerušiť)",
+          "schedule_low_battery": "Plán preskočený (slabá batéria)",
+          "area_not_found": "Oblasť sa nenašla, čistenie ukončené",
+          "lost_return_to_station": "Robot sa stratil — vráťte ho na stanicu",
+          "maintain_side_brush": "Údržba: bočná kefa",
+          "maintain_roller_brush": "Údržba: hlavná kefa",
+          "maintain_dust_box_filter": "Údržba: filter nádoby na prach",
+          "maintain_mop_pads": "Údržba: mopovacie podložky",
+          "maintain_dust_bag": "Údržba: vrecko na prach",
+          "maintain_mop_slot": "Údržba: priestor na umývanie mopu",
+          "maintain_dirty_water_filter": "Údržba: filter odpadovej vody",
+          "maintain_unit_sensor": "Údržba: senzory robota"
+        }
+      },
+      "station_status": {
+        "name": "Aktivita stanice",
+        "state": {
+          "none": "Žiadna",
+          "asleep": "Spí",
+          "relocating": "Lokalizácia",
+          "washing_mop": "Umývanie mopovacích podložiek",
+          "emptying": "Vyprázdňovanie prachu",
+          "hot_drying": "Sušenie horúcim vzduchom",
+          "wind_drying": "Sušenie ventilátorom",
+          "returning_to_wash": "Návrat na umývanie",
+          "return_to_wash_paused": "Návrat na umývanie pozastavený",
+          "returning_to_empty": "Návrat na vyprázdnenie",
+          "return_to_empty_paused": "Návrat na vyprázdnenie pozastavený",
+          "returning": "Návrat na stanicu",
+          "return_paused": "Návrat pozastavený",
+          "charging": "Nabíjanie",
+          "charged": "Nabité"
+        }
+      }
+    },
+    "select": {
+      "fan_speed": {
+        "name": "Rýchlosť ventilátora",
+        "state": {
+          "quiet": "Tichá",
+          "standard": "Štandardná",
+          "medium_gear": "Stredná",
+          "strong": "Silná",
+          "medium": "Stredná",
+          "mode_quiet": "Tichá",
+          "mode_standard": "Štandardná",
+          "mode_medium": "Stredná",
+          "mode_strong": "Silná",
+          "ultra_strong": "Ultra silná",
+          "off": "Vypnuté",
+          "energy_saving": "Úsporná",
+          "powerful": "Výkonná",
+          "slient": "Tichá",
+          "turbo": "Turbo",
+          "0": "Tichá",
+          "1": "Úsporná",
+          "2": "Štandardná",
+          "3": "Výkonná",
+          "close": "Vypnuté",
+          "one": "Jedna",
+          "two": "Dve",
+          "three": "Tri",
+          "forth": "Štyri",
+          "silent": "Tichá",
+          "basic": "Základná",
+          "full_speed": "Plný výkon",
+          "auto": "Automatická",
+          "max": "Maximálna"
+        }
+      },
+      "water_level": {
+        "name": "Úroveň vody",
+        "state": {
+          "low_water_level": "Nízka úroveň vody",
+          "medium_water_level": "Stredná úroveň vody",
+          "high_water_level": "Vysoká úroveň vody",
+          "low": "Nízka",
+          "medium": "Stredná",
+          "high": "Vysoká",
+          "middle": "Stredná",
+          "height": "Vysoká",
+          "mid": "Stredná",
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "gear_1": "Stupeň 1",
+          "gear_2": "Stupeň 2",
+          "gear_3": "Stupeň 3",
+          "close": "Vypnuté",
+          "one": "Jedna",
+          "two": "Dve",
+          "three": "Tri",
+          "hig": "Vysoká",
+          "off": "Vypnuté",
+          "level1": "Úroveň 1",
+          "level2": "Úroveň 2",
+          "level3": "Úroveň 3"
+        }
+      },
+      "mode": {
+        "name": "Režim čistenia",
+        "state": {
+          "silent": "Tichý",
+          "basic": "Štandardný",
+          "strong": "Silný",
+          "full_speed": "Plný výkon (max.)",
+          "auto": "Automatický",
+          "sweep": "Vysávanie",
+          "sweep_and_mop": "Vysávanie a mopovanie",
+          "mop": "Mopovanie",
+          "medium": "Stredný",
+          "sweepandmop": "Vysávanie a mopovanie",
+          "sweep_then_mop": "Najprv vysávanie, potom mopovanie",
+          "sweep_mop": "Vysávanie a mopovanie",
+          "sweep_before_mopping": "Vysávanie pred mopovaním",
+          "both": "Vysávanie a mopovanie",
+          "custom": "Vlastný"
+        }
+      },
+      "sweep_type": {
+        "name": "Typ čistenia",
+        "state": {
+          "global": "Celá plocha",
+          "mop": "Mopovanie",
+          "edge": "Pozdĺž okrajov",
+          "area": "Oblasť",
+          "point": "Bodové",
+          "remote": "Diaľkové ovládanie",
+          "explore": "Mapovanie",
+          "room": "Podľa miestností",
+          "floor": "Podľa podlahy",
+          "control": "Diaľkové ovládanie",
+          "total": "Celkové čistenie",
+          "wall": "Čistenie okrajov",
+          "zone": "Čistenie zóny",
+          "corner": "Pozdĺž okrajov",
+          "man": "Diaľkové ovládanie",
+          "roomprefer": "Nastavenia miestností",
+          "materialprefer": "Nastavenia podláh",
+          "maping": "Prebieha mapovanie",
+          "gocharging": "Návrat na nabíjanie",
+          "remotecontrol": "Diaľkové ovládanie",
+          "selectroom": "Miestnosť",
+          "customclean": "Vlastné čistenie",
+          "costum": "Vlastné",
+          "custom_area": "Vlastná oblasť",
+          "appointment": "Naplánované",
+          "linkage": "Prepojenie",
+          "fast": "Rýchle",
+          "ai_hosting": "AI riadenie"
+        }
+      },
+      "active_map": {
+        "name": "Aktívna mapa"
+      },
+      "route": {
+        "name": "Trasa mopovania",
+        "state": {
+          "fast": "Rýchla",
+          "daily": "Denná",
+          "fine": "Dôkladná"
+        }
+      },
+      "count": {
+        "name": "Počet prechodov",
+        "state": {
+          "once": "Raz",
+          "twice": "Dvakrát"
+        }
+      },
+      "carpet_prefer": {
+        "name": "Stratégia čistenia kobercov",
+        "state": {
+          "adaptive": "Adaptívna",
+          "evade": "Vyhýbať sa",
+          "carpet_only": "Len prejsť",
+          "ignore": "Ignorovať"
+        }
+      },
+      "dust_collection": {
+        "name": "Automatické vyprázdňovanie",
+        "state": {
+          "none": "Bez automatického vyprázdňovania",
+          "every_clean": "Po každom čistení",
+          "medium": "Každých 5 čistení"
+        }
+      },
+      "drying_time": {
+        "name": "Čas sušenia mopu",
+        "state": {
+          "120": "2 hodiny",
+          "180": "3 hodiny",
+          "240": "4 hodiny"
+        }
+      },
+      "mop_wash_frequency": {
+        "name": "Interval umývania",
+        "state": {
+          "5": "5 min",
+          "10": "10 min",
+          "15": "15 min"
+        }
+      },
+      "mop_wash_temp": {
+        "name": "Teplota umývania mopu",
+        "state": {
+          "normal": "Normálna",
+          "low": "Nízka",
+          "high": "Vysoká"
+        }
+      },
+      "voice_language": {
+        "name": "Jazyk hlasových hlásení",
+        "state": {
+          "chinese": "Čínština",
+          "english": "Angličtina",
+          "russian": "Ruština",
+          "german": "Nemčina",
+          "italian": "Taliančina",
+          "french": "Francúzština",
+          "polish": "Poľština",
+          "spanish": "Španielčina",
+          "korean": "Kórejčina",
+          "chinese_tw": "Čínština (Taiwan)",
+          "vietnamese": "Vietnamčina"
+        }
+      }
+    },
+    "switch": {
+      "repeat": {
+        "name": "Opakované čistenie"
+      },
+      "alarm": {
+        "name": "Nájsť vysávač (pípanie)"
+      },
+      "child_lock": {
+        "name": "Detský zámok"
+      },
+      "do_not_disturb": {
+        "name": "Nerušiť"
+      },
+      "dnd_no_dust": {
+        "name": "Bez automatického vyprázdňovania počas Nerušiť"
+      },
+      "dnd_no_dry": {
+        "name": "Bez automatického sušenia počas Nerušiť"
+      },
+      "break_point": {
+        "name": "Pokračovať v čistení"
+      },
+      "carpet_boost": {
+        "name": "Zosilnenie na kobercoch"
+      },
+      "auto_drying": {
+        "name": "Automatické sušenie"
+      },
+      "mop_augment": {
+        "name": "Mopovanie až po okraj"
+      },
+      "wash_mop": {
+        "name": "Umyť mopovacie podložky"
+      },
+      "dry_mop": {
+        "name": "Vysušiť mopovacie podložky"
+      },
+      "collect_dust": {
+        "name": "Vyprázdniť zásobník prachu"
+      }
+    },
+    "time": {
+      "dnd_start_time": {
+        "name": "Nerušiť – začiatok"
+      },
+      "dnd_end_time": {
+        "name": "Nerušiť – koniec"
+      }
+    },
+    "number": {
+      "volume": {
+        "name": "Hlasitosť"
+      }
+    },
+    "button": {
+      "reset_side_brush": {
+        "name": "Resetovať bočnú kefu"
+      },
+      "reset_main_brush": {
+        "name": "Resetovať hlavnú kefu"
+      },
+      "reset_filter": {
+        "name": "Resetovať filter"
+      },
+      "reset_mop": {
+        "name": "Resetovať mop"
+      },
+      "reset_dust_bag": {
+        "name": "Resetovať vrecko na prach"
+      },
+      "reset_mop_trough": {
+        "name": "Resetovať vaničku na umývanie mopu"
+      },
+      "reset_unit_sensor": {
+        "name": "Resetovať senzory robota"
+      },
+      "fast_building": {
+        "name": "Rýchle mapovanie"
+      },
+      "clean_building": {
+        "name": "Znovu vytvoriť mapu"
+      }
+    }
+  },
+  "services": {
+    "clean_segment": {
+      "name": "Čistiť miestnosti",
+      "description": "Spustí čistenie jednej alebo viacerých miestností podľa ID miestnosti z mapy.",
+      "fields": {
+        "segments": {
+          "name": "Miestnosti",
+          "description": "Zoznam ID miestností na čistenie (z atribútu \"rooms\" kamery s mapou)."
+        }
+      }
+    },
+    "refresh_map": {
+      "name": "Obnoviť mapu",
+      "description": "Krátko spustí vysávač, aby opustil stanicu a nahral novú mapu, a potom ho pošle späť na stanicu.",
+      "fields": {
+        "confirm_movement": {
+          "name": "Potvrdiť pohyb",
+          "description": "Musí byť true. Vysávač krátko opustí stanicu a vráti sa."
+        }
+      }
+    }
+  }
+}
