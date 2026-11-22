@@ -1,5 +1,5 @@
 """Pure tests for the multi-language error texts:
-* XTL_ERROR_SOLUTIONS parity — 11 buckets × the same 25 codes, and (when
+* XTL_ERROR_SOLUTIONS parity — 12 buckets × the same 25 codes, and (when
   the vendor bundle is on this machine) the 9 plugin-sourced buckets must
   match main.bundle's keywordN tables verbatim, via the bundle's own
   errorCodes map (code -> title/solution keyword);
@@ -28,13 +28,14 @@ PKG = Path(__file__).resolve().parents[2] / "custom_components" / "jonr_vac"
 BUNDLE = (Path(__file__).resolve().parents[3]
           / "jonr_xiaomihome_plugin" / "1730143" / "android" / "main.bundle")
 
-LANGS = ["en", "fr", "de", "es", "it", "pl", "ru", "zh_Hans", "zh_Hant",
+LANGS = ["en", "fr", "sk", "de", "es", "it", "pl", "ru", "zh_Hans", "zh_Hant",
          "ko", "vi"]
+OWN_WORDING = ("en", "fr", "sk")     # not in the vendor bundle
 
 
 # --- bucket shape + parity vs the plugin bundle ------------------------------
 
-def test_all_eleven_buckets_cover_the_same_codes(monkeypatch):
+def test_all_twelve_buckets_cover_the_same_codes(monkeypatch):
     xtl = load_xtl_module(monkeypatch)
     codes = sorted(xtl.XTL_ERROR_CODE_KEYS)
     assert sorted(xtl.XTL_ERROR_SOLUTIONS) == sorted(LANGS)
@@ -79,7 +80,7 @@ def test_plugin_buckets_match_the_bundle_verbatim(monkeypatch):
                     "it", "de", "pl", "vi"]
     by_lang = dict(zip(bundle_order, (tables[s] for s in sorted(tables, key=int))))
 
-    for lang in LANGS[2:]:                       # en/fr keep OUR wording
+    for lang in (l for l in LANGS if l not in OWN_WORDING):  # en/fr/sk keep OUR wording
         want = {
             code: by_lang[lang]["keyword%d" % err_map[code][1]].strip()
             for code in sorted(err_map)}
@@ -99,6 +100,7 @@ def test_solutions_bucket_routing(monkeypatch):
         "pt": "en", "pt-BR": "en", "ja": "en", "nl": "en",
         "": "en", None: "en", "xx": "en", "ko-KR": "ko", "vi_VN": "vi",
         "fr-FR": "fr", "ru-RU": "ru", "pl": "pl",
+        "sk": "sk", "sk-SK": "sk", "SK": "sk", "cs": "en",
     }
     for tag, bucket in cases.items():
         assert xtl._solution_bucket(tag) == bucket, tag
@@ -144,7 +146,8 @@ def test_bubble_label_language_follows_hass_language(monkeypatch):
     xtl = load_xtl_module(monkeypatch)
     for lang, bucket in [("zh-Hant", "zh-Hant"), ("ko", "ko"),
                          ("vi", "vi"), ("de", "de"), ("fr", "fr"),
-                         ("pt-BR", "pt-BR"), ("pt", "pt")]:
+                         ("pt-BR", "pt-BR"), ("pt", "pt"),
+                         ("sk", "sk")]:
         labels = mod._labels(lang)
         assert set(labels) == set(xtl.XTL_ERROR_CODE_KEYS)
         states = json.loads(
